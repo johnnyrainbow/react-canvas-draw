@@ -1,9 +1,9 @@
 const TOUCH_SLOP = 10;
 const PINCH_TIMEOUT_MS = 250;
 const SUPPRESS_SCROLL = (e) => {
-  // No zooming while drawing, but we'll cancel the scroll event.
-  e.preventDefault();
-  return this;
+	// No zooming while drawing, but we'll cancel the scroll event.
+	e.preventDefault();
+	return this;
 };
 
 /**
@@ -11,41 +11,49 @@ const SUPPRESS_SCROLL = (e) => {
  * initiating pan and drawing actions.
  */
 export class DefaultState {
-  handleMouseWheel = (e, canvasDraw) => {
-    const { disabled, enablePanAndZoom, mouseZoomFactor } = canvasDraw.props;
-    if (disabled ) {
-      return new DisabledState();
-    } else if (enablePanAndZoom && e.ctrlKey) {
-      e.preventDefault();
-      canvasDraw.coordSystem.scaleAtClientPoint(mouseZoomFactor * e.deltaY, clientPointFromEvent(e));
-    }
-    return this;
-  };
+	handleMouseWheel = (e, canvasDraw) => {
+		const { disabled, enablePanAndZoom, mouseZoomFactor } = canvasDraw.props;
+		if (disabled) {
+			return new DisabledState();
+		} else if (enablePanAndZoom && e.ctrlKey) {
+			e.preventDefault();
+			canvasDraw.coordSystem.scaleAtClientPoint(
+				mouseZoomFactor * e.deltaY,
+				clientPointFromEvent(e)
+			);
+		}
+		return this;
+	};
 
-  handleDrawStart = (e, canvasDraw) => {
-    if (canvasDraw.props.disabled) {
-      return new DisabledState();
-    } else if (e.ctrlKey && canvasDraw.props.enablePanAndZoom) {
-      return (new PanState()).handleDrawStart(e, canvasDraw);
-    } else {
-      return (new WaitForPinchState()).handleDrawStart(e, canvasDraw);
-    }
-  };
+	handleDrawStart = (e, canvasDraw, shouldStartAtEdge) => {
+		if (canvasDraw.props.disabled) {
+			return new DisabledState();
+		} else if (e.ctrlKey && canvasDraw.props.enablePanAndZoom) {
+			return new PanState().handleDrawStart(e, canvasDraw);
+		} else {
+			return new WaitForPinchState().handleDrawStart(
+				e,
+				canvasDraw,
+				shouldStartAtEdge
+			);
+		}
+	};
 
-  handleDrawMove = (e, canvasDraw) => {
-    if (canvasDraw.props.disabled) {
-      return new DisabledState();
-    } else {
-      const { x, y } = viewPointFromEvent(canvasDraw.coordSystem, e);
-      canvasDraw.lazy.update({ x, y });
-      return this;
-    }
-  };
+	handleDrawMove = (e, canvasDraw) => {
+		if (canvasDraw.props.disabled) {
+			return new DisabledState();
+		} else {
+			const { x, y } = viewPointFromEvent(canvasDraw.coordSystem, e);
 
-  handleDrawEnd = (e, canvasDraw) => {
-    return canvasDraw.props.disabled ? (new DisabledState()) : this;
-  };
-};
+			canvasDraw.lazy.update({ x, y });
+			return this;
+		}
+	};
+
+	handleDrawEnd = (e, canvasDraw) => {
+		return canvasDraw.props.disabled ? new DisabledState() : this;
+	};
+}
 
 /**
  * This state is used as long as the disabled prop is active. It ignores all
@@ -54,37 +62,37 @@ export class DefaultState {
  * performed).
  */
 export class DisabledState {
-  handleMouseWheel = (e, canvasDraw) => {
-    if (canvasDraw.props.disabled) {
-      return this;
-    } else {
-      return (new DefaultState()).handleMouseWheel(e, canvasDraw);
-    }
-  };
+	handleMouseWheel = (e, canvasDraw) => {
+		if (canvasDraw.props.disabled) {
+			return this;
+		} else {
+			return new DefaultState().handleMouseWheel(e, canvasDraw);
+		}
+	};
 
-  handleDrawStart = (e, canvasDraw) => {
-    if (canvasDraw.props.disabled) {
-      return this;
-    } else {
-      return (new DefaultState()).handleDrawStart(e, canvasDraw);
-    }
-  };
+	handleDrawStart = (e, canvasDraw) => {
+		if (canvasDraw.props.disabled) {
+			return this;
+		} else {
+			return new DefaultState().handleDrawStart(e, canvasDraw);
+		}
+	};
 
-  handleDrawMove = (e, canvasDraw) => {
-    if (canvasDraw.props.disabled) {
-      return this;
-    } else {
-      return (new DefaultState()).handleDrawMove(e, canvasDraw);
-    }
-  };
+	handleDrawMove = (e, canvasDraw) => {
+		if (canvasDraw.props.disabled) {
+			return this;
+		} else {
+			return new DefaultState().handleDrawMove(e, canvasDraw);
+		}
+	};
 
-  handleDrawEnd = (e, canvasDraw) => {
-    if (canvasDraw.props.disabled) {
-      return this;
-    } else {
-      return (new DefaultState()).handleDrawEnd(e, canvasDraw);
-    }
-  }
+	handleDrawEnd = (e, canvasDraw) => {
+		if (canvasDraw.props.disabled) {
+			return this;
+		} else {
+			return new DefaultState().handleDrawEnd(e, canvasDraw);
+		}
+	};
 }
 
 /**
@@ -92,29 +100,35 @@ export class DisabledState {
  * retained until the pan ceases.
  */
 export class PanState {
-  handleMouseWheel = SUPPRESS_SCROLL.bind(this);
+	handleMouseWheel = SUPPRESS_SCROLL.bind(this);
 
-  handleDrawStart = (e, canvasDraw) => {
-    e.preventDefault();
+	handleDrawStart = (e, canvasDraw) => {
+		e.preventDefault();
 
-    this.dragStart = clientPointFromEvent(e);
-    this.panStart = { x: canvasDraw.coordSystem.x, y: canvasDraw.coordSystem.y };
+		this.dragStart = clientPointFromEvent(e);
+		this.panStart = {
+			x: canvasDraw.coordSystem.x,
+			y: canvasDraw.coordSystem.y,
+		};
 
-    return this;
-  };
+		return this;
+	};
 
-  handleDrawMove = (e, canvasDraw) => {
-    e.preventDefault();
+	handleDrawMove = (e, canvasDraw) => {
+		e.preventDefault();
 
-    const { clientX, clientY } = clientPointFromEvent(e);
-    const dx = clientX - this.dragStart.clientX;
-    const dy = clientY - this.dragStart.clientY;
-    canvasDraw.coordSystem.setView({ x: this.panStart.x + dx, y: this.panStart.y + dy });
+		const { clientX, clientY } = clientPointFromEvent(e);
+		const dx = clientX - this.dragStart.clientX;
+		const dy = clientY - this.dragStart.clientY;
+		canvasDraw.coordSystem.setView({
+			x: this.panStart.x + dx,
+			y: this.panStart.y + dy,
+		});
 
-    return this;
-  };
+		return this;
+	};
 
-  handleDrawEnd = () => new DefaultState();
+	handleDrawEnd = () => new DefaultState();
 }
 
 /**
@@ -124,86 +138,91 @@ export class PanState {
  * or movement happens without a second touch.
  */
 export class WaitForPinchState {
-  constructor() {
-    this.startClientPoint = null;
-    this.startTimestamp = (new Date()).valueOf();
-    this.deferredPoints = [];
-  }
+	constructor() {
+		this.startClientPoint = null;
+		this.startTimestamp = new Date().valueOf();
+		this.deferredPoints = [];
+	}
 
-  handleMouseWheel = SUPPRESS_SCROLL.bind(this);
+	handleMouseWheel = SUPPRESS_SCROLL.bind(this);
 
-  handleDrawStart  = (e, canvasDraw) => {
-    const { enablePanAndZoom } = canvasDraw.props;
-    e.preventDefault();
+	handleDrawStart = (e, canvasDraw, shouldStartAtEdge) => {
+		const { enablePanAndZoom } = canvasDraw.props;
+		e.preventDefault();
 
-    // We're going to transition immediately into lazy-drawing mode if
-    // pan-and-zoom isn't enabled or if this event wasn't triggered by a touch.
-    if (!e.touches || !e.touches.length || !enablePanAndZoom) {
-      return (new DrawingState()).handleDrawStart(e, canvasDraw);
-    }
+		// We're going to transition immediately into lazy-drawing mode if
+		// pan-and-zoom isn't enabled or if this event wasn't triggered by a touch.
+		if (!e.touches || !e.touches.length || !enablePanAndZoom) {
+			return new DrawingState().handleDrawStart(
+				e,
+				canvasDraw,
+				shouldStartAtEdge
+			);
+		}
 
-    // If we already have two touch events, we can move straight into pinch/pan
-    if (enablePanAndZoom && e.touches && e.touches.length >= 2) {
-      return (new ScaleOrPanState()).handleDrawStart(e, canvasDraw);
-    }
+		// If we already have two touch events, we can move straight into pinch/pan
+		if (enablePanAndZoom && e.touches && e.touches.length >= 2) {
+			return new ScaleOrPanState().handleDrawStart(e, canvasDraw);
+		}
 
-    return this.handleDrawMove(e, canvasDraw);
-  };
+		return this.handleDrawMove(e, canvasDraw);
+	};
 
-  handleDrawMove = (e, canvasDraw) => {
-    e.preventDefault();
+	handleDrawMove = (e, canvasDraw) => {
+		e.preventDefault();
 
-    // If we have two touches, move to pinch/pan (we don't have to recheck
-    // whether zoom is enabled because that happend in draw start).
-    if (e.touches && e.touches.length >= 2) {
-      // Use the start draw to handler to transition.
-      return (new ScaleOrPanState()).handleDrawStart(e, canvasDraw);
-    }
+		// If we have two touches, move to pinch/pan (we don't have to recheck
+		// whether zoom is enabled because that happend in draw start).
+		if (e.touches && e.touches.length >= 2) {
+			// Use the start draw to handler to transition.
+			return new ScaleOrPanState().handleDrawStart(e, canvasDraw);
+		}
 
-    const clientPt = clientPointFromEvent(e);
-    this.deferredPoints.push(clientPt);
+		const clientPt = clientPointFromEvent(e);
+		this.deferredPoints.push(clientPt);
 
-    // If we've already moved far enough, or if enough time has passed, give up
-    // and switch over to drawing.
-    if ((new Date()).valueOf() - this.startTimestamp < PINCH_TIMEOUT_MS) {
-      if (this.startClientPoint === null) {
-        this.startClientPoint = clientPt;
-      }
+		// If we've already moved far enough, or if enough time has passed, give up
+		// and switch over to drawing.
+		if (new Date().valueOf() - this.startTimestamp < PINCH_TIMEOUT_MS) {
+			if (this.startClientPoint === null) {
+				this.startClientPoint = clientPt;
+			}
 
-      // Note that we're using "manhattan distance" rather than computing a
-      // hypotenuse here as a cheap approximation
-      const d =
-        Math.abs(clientPt.clientX - this.startClientPoint.clientX)
-        + Math.abs(clientPt.clientY - this.startClientPoint.clientY);
+			// Note that we're using "manhattan distance" rather than computing a
+			// hypotenuse here as a cheap approximation
+			const d =
+				Math.abs(clientPt.clientX - this.startClientPoint.clientX) +
+				Math.abs(clientPt.clientY - this.startClientPoint.clientY);
 
-      if (d < TOUCH_SLOP) {
-        // We're not ready to give up yet.
-        return this;
-      }
-    }
+			if (d < TOUCH_SLOP) {
+				// We're not ready to give up yet.
+				return this;
+			}
+		}
 
-    // Okay, give up and start drawing.
-    return this.issueDeferredPoints(canvasDraw);
-  };
+		// Okay, give up and start drawing.
+		return this.issueDeferredPoints(canvasDraw);
+	};
 
-  handleDrawEnd = (e, canvasDraw) => {
-    // The user stopped drawing before we decided what to do. Just treat this as
-    // if they were drawing all along.
-    return this.issueDeferredPoints(canvasDraw).handleDrawEnd(e, canvasDraw);
-  };
+	handleDrawEnd = (e, canvasDraw) => {
+		// The user stopped drawing before we decided what to do. Just treat this as
+		// if they were drawing all along.
+		return this.issueDeferredPoints(canvasDraw).handleDrawEnd(e, canvasDraw);
+	};
 
-  issueDeferredPoints = (canvasDraw) => {
-    // Time to give up. Play our deferred points out to the drawing state.
-    // The first point will have been a start draw.
-    let nextState = new DrawingState();
-    for (let i = 0; i < this.deferredPoints.length; i++) {
-      const deferredPt = this.deferredPoints[i];
-      const syntheticEvt = new SyntheticEvent(deferredPt);
-      const func = i === 0 ? nextState.handleDrawStart : nextState.handleDrawMove;
-      nextState = func(syntheticEvt, canvasDraw);
-    }
-    return nextState;
-  };
+	issueDeferredPoints = (canvasDraw) => {
+		// Time to give up. Play our deferred points out to the drawing state.
+		// The first point will have been a start draw.
+		let nextState = new DrawingState();
+		for (let i = 0; i < this.deferredPoints.length; i++) {
+			const deferredPt = this.deferredPoints[i];
+			const syntheticEvt = new SyntheticEvent(deferredPt);
+			const func =
+				i === 0 ? nextState.handleDrawStart : nextState.handleDrawMove;
+			nextState = func(syntheticEvt, canvasDraw);
+		}
+		return nextState;
+	};
 }
 
 /**
@@ -211,207 +230,261 @@ export class WaitForPinchState {
  * don't yet know if they intend to pan or zoom.
  */
 export class ScaleOrPanState {
-  handleMouseWheel = SUPPRESS_SCROLL.bind(this);
+	handleMouseWheel = SUPPRESS_SCROLL.bind(this);
 
-  handleDrawStart = (e, canvasDraw) => {
-    e.preventDefault();
-    if (!e.touches || e.touches.length < 2) {
-      return new DefaultState();
-    }
-    this.start = this.getTouchMetrics(e);
-    this.panStart = { x: canvasDraw.coordSystem.x, y: canvasDraw.coordSystem.y };
-    this.scaleStart = canvasDraw.coordSystem.scale;
-    return this;
-  };
+	handleDrawStart = (e, canvasDraw) => {
+		e.preventDefault();
+		if (!e.touches || e.touches.length < 2) {
+			return new DefaultState();
+		}
+		this.start = this.getTouchMetrics(e);
+		this.panStart = {
+			x: canvasDraw.coordSystem.x,
+			y: canvasDraw.coordSystem.y,
+		};
+		this.scaleStart = canvasDraw.coordSystem.scale;
+		return this;
+	};
 
-  handleDrawMove = (e, canvasDraw) => {
-    e.preventDefault();
-    if (!e.touches || e.touches.length < 2) {
-      return new DefaultState();
-    }
+	handleDrawMove = (e, canvasDraw) => {
+		e.preventDefault();
+		if (!e.touches || e.touches.length < 2) {
+			return new DefaultState();
+		}
 
-    const { centroid, distance } = this.recentMetrics = this.getTouchMetrics(e);
+		const { centroid, distance } = (this.recentMetrics =
+			this.getTouchMetrics(e));
 
-    // Switch to scaling?
-    const dd = Math.abs(distance - this.start.distance);
-    if (dd >= TOUCH_SLOP) {
-      return new TouchScaleState(this).handleDrawMove(e, canvasDraw);
-    }
+		// Switch to scaling?
+		const dd = Math.abs(distance - this.start.distance);
+		if (dd >= TOUCH_SLOP) {
+			return new TouchScaleState(this).handleDrawMove(e, canvasDraw);
+		}
 
-    // Switch to panning?
-    const dx = centroid.clientX - this.start.centroid.clientX;
-    const dy = centroid.clientY - this.start.centroid.clientY;
-    const dc = Math.abs(dx) + Math.abs(dy);
-    if (dc >= TOUCH_SLOP) {
-      return new TouchPanState(this).handleDrawMove(e, canvasDraw);
-    }
+		// Switch to panning?
+		const dx = centroid.clientX - this.start.centroid.clientX;
+		const dy = centroid.clientY - this.start.centroid.clientY;
+		const dc = Math.abs(dx) + Math.abs(dy);
+		if (dc >= TOUCH_SLOP) {
+			return new TouchPanState(this).handleDrawMove(e, canvasDraw);
+		}
 
-    // Not enough movement yet
-    return this;
-  };
+		// Not enough movement yet
+		return this;
+	};
 
-  handleDrawEnd = () => new DefaultState();
+	handleDrawEnd = () => new DefaultState();
 
-  getTouchMetrics = (e) => {
-    const { clientX: t1x, clientY: t1y } = clientPointFromEvent(e.touches[0]);
-    const { clientX: t2x, clientY: t2y } = clientPointFromEvent(e.touches[1]);
+	getTouchMetrics = (e) => {
+		const { clientX: t1x, clientY: t1y } = clientPointFromEvent(e.touches[0]);
+		const { clientX: t2x, clientY: t2y } = clientPointFromEvent(e.touches[1]);
 
-    const dx = t2x - t1x;
-    const dy = t2y - t1y;
+		const dx = t2x - t1x;
+		const dy = t2y - t1y;
 
-    return {
-      t1: { clientX: t1x, clientY: t1y },
-      t2: { clientX: t2x, clientY: t2y },
-      distance: Math.sqrt(dx * dx + dy * dy),
-      centroid: { clientX: (t1x + t2x) / 2.0, clientY: (t1y + t2y) / 2.0 },
-    };
-  };
+		return {
+			t1: { clientX: t1x, clientY: t1y },
+			t2: { clientX: t2x, clientY: t2y },
+			distance: Math.sqrt(dx * dx + dy * dy),
+			centroid: { clientX: (t1x + t2x) / 2.0, clientY: (t1y + t2y) / 2.0 },
+		};
+	};
 }
 
 /**
  * The user is actively using touch gestures to pan the image.
  */
 export class TouchPanState {
-  constructor(scaleOrPanState) {
-    this.scaleOrPanState = scaleOrPanState;
-  }
+	constructor(scaleOrPanState) {
+		this.scaleOrPanState = scaleOrPanState;
+	}
 
-  handleMouseWheel = SUPPRESS_SCROLL.bind(this);
-  handleDrawStart = () => this;
+	handleMouseWheel = SUPPRESS_SCROLL.bind(this);
+	handleDrawStart = () => this;
 
-  handleDrawMove = (e, canvasDraw) => {
-    e.preventDefault();
-    if (!e.touches || e.touches.length < 2) {
-      return new DefaultState();
-    }
+	handleDrawMove = (e, canvasDraw) => {
+		e.preventDefault();
+		if (!e.touches || e.touches.length < 2) {
+			return new DefaultState();
+		}
 
-    const ref = this.scaleOrPanState;
-    const { centroid, distance } = ref.recentMetrics = ref.getTouchMetrics(e);
+		const ref = this.scaleOrPanState;
+		const { centroid, distance } = (ref.recentMetrics = ref.getTouchMetrics(e));
 
-    const dx = centroid.clientX - ref.start.centroid.clientX;
-    const dy = centroid.clientY - ref.start.centroid.clientY;
+		const dx = centroid.clientX - ref.start.centroid.clientX;
+		const dy = centroid.clientY - ref.start.centroid.clientY;
 
-    canvasDraw.setView({ x: ref.panStart.x + dx, y: ref.panStart.y + dy });
+		canvasDraw.setView({ x: ref.panStart.x + dx, y: ref.panStart.y + dy });
 
-    return this;
-  };
+		return this;
+	};
 
-  handleDrawEnd = () => new DefaultState();
+	handleDrawEnd = () => new DefaultState();
 }
 
 /**
  * The user is actively using touch gestures to scale the drawing.
  */
 export class TouchScaleState {
-  constructor(scaleOrPanState) {
-    this.scaleOrPanState = scaleOrPanState;
-  }
+	constructor(scaleOrPanState) {
+		this.scaleOrPanState = scaleOrPanState;
+	}
 
-  handleMouseWheel = SUPPRESS_SCROLL.bind(this);
-  handleDrawStart = () => this;
+	handleMouseWheel = SUPPRESS_SCROLL.bind(this);
+	handleDrawStart = () => this;
 
-  handleDrawMove = (e, canvasDraw) => {
-    e.preventDefault();
-    if (!e.touches || e.touches.length < 2) {
-      return new DefaultState();
-    }
+	handleDrawMove = (e, canvasDraw) => {
+		e.preventDefault();
+		if (!e.touches || e.touches.length < 2) {
+			return new DefaultState();
+		}
 
-    const ref = this.scaleOrPanState;
-    const { centroid, distance } = ref.recentMetrics = ref.getTouchMetrics(e);
+		const ref = this.scaleOrPanState;
+		const { centroid, distance } = (ref.recentMetrics = ref.getTouchMetrics(e));
 
-    const targetScale = ref.scaleStart * (distance / ref.start.distance);
-    const dScale = targetScale - canvasDraw.coordSystem.scale;
-    canvasDraw.coordSystem.scaleAtClientPoint(dScale, centroid);
+		const targetScale = ref.scaleStart * (distance / ref.start.distance);
+		const dScale = targetScale - canvasDraw.coordSystem.scale;
+		canvasDraw.coordSystem.scaleAtClientPoint(dScale, centroid);
 
-    return this;
-  };
+		return this;
+	};
 
-  handleDrawEnd = () => new DefaultState();
+	handleDrawEnd = () => new DefaultState();
 }
 
 /**
  * This state is active when the user is drawing.
  */
 export class DrawingState {
-  constructor() {
-    this.isDrawing = false;
-  }
+	constructor() {
+		this.isDrawing = false;
+	}
 
-  handleMouseWheel = SUPPRESS_SCROLL.bind(this);
+	handleMouseWheel = SUPPRESS_SCROLL.bind(this);
 
-  handleDrawStart = (e, canvasDraw) => {
-    e.preventDefault();
+	handleDrawStart = (e, canvasDraw, shouldStartAtEdge) => {
+		console.log('SHOULD START EDGE ' + shouldStartAtEdge);
+		e.preventDefault();
 
-    if (e.touches && e.touches.length) {
-      // on touch, set catenary position to touch pos
-      const { x, y } = viewPointFromEvent(canvasDraw.coordSystem, e);
-      canvasDraw.lazy.update({ x, y }, { both: true });
-    }
+		if (e.touches && e.touches.length) {
+			// on touch, set catenary position to touch pos
+			const { x, y } = viewPointFromEvent(canvasDraw.coordSystem, e);
 
-    return this.handleDrawMove(e, canvasDraw);
-  };
+			canvasDraw.lazy.update({ x, y }, { both: true });
+		}
 
-  handleDrawMove = (e, canvasDraw) => {
-    e.preventDefault();
+		return this.handleDrawMove(e, canvasDraw, shouldStartAtEdge);
+	};
 
-    const { x, y } = viewPointFromEvent(canvasDraw.coordSystem, e);
-    canvasDraw.lazy.update({ x, y });
-    const isDisabled = !canvasDraw.lazy.isEnabled();
+	handleDrawMove = (e, canvasDraw, shouldStartAtEdge) => {
+		console.log('DRAW MOVE B');
+		e.preventDefault();
 
-    if (!this.isDrawing || isDisabled) {
-      // Start drawing and add point
-      canvasDraw.points.push(canvasDraw.clampPointToDocument(canvasDraw.lazy.brush.toObject()));
-      this.isDrawing = true;
-    }
+		let { x, y } = viewPointFromEvent(canvasDraw.coordSystem, e);
+		if (shouldStartAtEdge) {
+			const offset = 80;
+			console.log('XY3 ' + x, y);
+			console.log('XY4 ', canvasDraw.lastX, canvasDraw.lastY);
+			console.log('WIDTH' + canvasDraw.props.canvasWidth);
+			console.log('WIDTH2', canvasDraw.canvas.drawing.clientWidth);
+			const realCanvasWidth = canvasDraw.canvas.drawing.clientWidth;
+			const realCanvasHeight = canvasDraw.canvas.drawing.clientHeight;
+			if (canvasDraw.lastX < 0 && x < offset) {
+				//left side exit
+				x = 0;
+			} else if (
+				canvasDraw.lastX >= realCanvasWidth &&
+				x >= realCanvasWidth - offset
+			) {
+				//right side exit
+				console.log('right side exit');
+				x += 500;
+			}
 
-    // Add new point
-    canvasDraw.points.push(canvasDraw.clampPointToDocument(canvasDraw.lazy.brush.toObject()));
+			if (canvasDraw.lastY < 0 && y < offset) {
+				//top side exit
+				y = 0;
+			} else if (
+				canvasDraw.lastY >= realCanvasHeight &&
+				y >= realCanvasHeight - offset
+			) {
+				//bottom side exit
+				y += 500;
+			}
 
-    // Draw current points
-    canvasDraw.drawPoints({
-      points: canvasDraw.points,
-      brushColor: canvasDraw.props.brushColor,
-      brushRadius: canvasDraw.props.brushRadius
-    });
+			// if(canvasDraw.las)
+			// x = canvasDraw.lastX;
+			// y = canvasDraw.lastY;
+			//FIGURE OUT WHICH SIDE WE'RE ENTERING FROM
 
-    return this;
-  };
+			//if we
+			// if(x < offset &&
+		} else {
+			console.log('handling move ', x, y);
+			canvasDraw.lastX = x;
+			canvasDraw.lastY = y;
+		}
+		canvasDraw.lazy.update({ x, y });
+		const isDisabled = !canvasDraw.lazy.isEnabled();
 
-  handleDrawEnd = (e, canvasDraw) => {
-    e.preventDefault();
+		if (!this.isDrawing || isDisabled) {
+			// Start drawing and add point
+			canvasDraw.points.push(
+				canvasDraw.clampPointToDocument(canvasDraw.lazy.brush.toObject())
+			);
+			this.isDrawing = true;
+		}
 
-    // Draw to this end pos
-    this.handleDrawMove(e, canvasDraw);
-    canvasDraw.saveLine();
+		// Add new point
+		canvasDraw.points.push(
+			canvasDraw.clampPointToDocument(canvasDraw.lazy.brush.toObject())
+		);
 
-    return new DefaultState();
-  };
+		// Draw current points
+		canvasDraw.drawPoints({
+			points: canvasDraw.points,
+			brushColor: canvasDraw.props.brushColor,
+			brushRadius: canvasDraw.props.brushRadius,
+		});
+
+		return this;
+	};
+
+	handleDrawEnd = (e, canvasDraw) => {
+		e.preventDefault();
+
+		// Draw to this end pos
+		this.handleDrawMove(e, canvasDraw);
+		canvasDraw.saveLine();
+
+		return new DefaultState();
+	};
 }
 
 export class SyntheticEvent {
-  constructor({ clientX, clientY }) {
-    this.clientX = clientX;
-    this.clientY = clientY;
-    this.touches = [ { clientX, clientY } ];
-  }
+	constructor({ clientX, clientY }) {
+		this.clientX = clientX;
+		this.clientY = clientY;
+		this.touches = [{ clientX, clientY }];
+	}
 
-  preventDefault = () => {};
+	preventDefault = () => {};
 }
 
 export function clientPointFromEvent(e) {
-  // use cursor pos as default
-  let clientX = e.clientX;
-  let clientY = e.clientY;
+	// use cursor pos as default
+	let clientX = e.clientX;
+	let clientY = e.clientY;
 
-  // use first touch if available
-  if (e.changedTouches && e.changedTouches.length > 0) {
-    clientX = e.changedTouches[0].clientX;
-    clientY = e.changedTouches[0].clientY;
-  }
+	// use first touch if available
+	if (e.changedTouches && e.changedTouches.length > 0) {
+		clientX = e.changedTouches[0].clientX;
+		clientY = e.changedTouches[0].clientY;
+	}
 
-  return { clientX, clientY };
+	return { clientX, clientY };
 }
 
 export function viewPointFromEvent(coordSystem, e) {
-  return coordSystem.clientPointToViewPoint(clientPointFromEvent(e));
+	return coordSystem.clientPointToViewPoint(clientPointFromEvent(e));
 }

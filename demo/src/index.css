@@ -38,3 +38,7 @@ p {
 input[type=number] {
   width: 50px;
 }
+
+div {
+  width: 50vw !important;
+}
