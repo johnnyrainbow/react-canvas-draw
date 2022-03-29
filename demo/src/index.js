@@ -18,6 +18,7 @@ class Demo extends Component {
 			'https://i.imgur.com/a0CGGVC.jpg',
 		],
 		trueMouseDown: false,
+		tool: 'Pencil',
 	};
 
 	componentDidMount() {
@@ -53,14 +54,19 @@ class Demo extends Component {
 		return (
 			<div
 				onMouseDown={() => {
-					this.setState({trueMouseDown: true});
+					this.setState({ trueMouseDown: true });
 					console.log('TRUE MOUSE DOWN');
 				}}
 				onMouseUp={() => {
-					this.setState({trueMouseDown:false});
+					this.setState({ trueMouseDown: false });
 					console.log('TRUE MOUSE UP');
 				}}
 			>
+				<button
+					onClick={() => {
+						this.setState({ tool: 'Circle' });
+					}}
+				>Circle</button>
 				<h1>React Canvas Draw</h1>
 				<iframe
 					title="GitHub link"
@@ -79,6 +85,8 @@ class Demo extends Component {
 				<CanvasDraw
 					trueMouseDown={this.state.trueMouseDown}
 					onChange={() => console.log('onChange')}
+          tool={this.state.tool}
+          fillShape={true}
 				/>
 				<h2>Custom Brush-Color</h2>
 				<p>
@@ -226,6 +234,7 @@ class Demo extends Component {
 					lazyRadius={this.state.lazyRadius}
 					canvasWidth={this.state.width}
 					canvasHeight={this.state.height}
+		
 				/>
 				<p>
 					The following is a disabled canvas with a hidden grid that we use to

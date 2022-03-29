@@ -381,6 +381,23 @@ export class DrawingState {
 		e.preventDefault();
 
 		let { x, y } = viewPointFromEvent(canvasDraw.coordSystem, e);
+		canvasDraw.lastX = x;
+		canvasDraw.lastY = y;
+		console.log('TOOL ', canvasDraw.props.tool);
+
+		if (canvasDraw.props.tool === 'Rectangle') {
+			canvasDraw.drawRect();
+		}
+		if (canvasDraw.props.tool === 'Circle') {
+			canvasDraw.drawCircle();
+      // canvasDraw.drawPoints({
+      //   points: canvasDraw.allDrawnPoints,
+      //   brushColor: canvasDraw.props.brushColor,
+      //   brushRadius: canvasDraw.props.brushRadius,
+      // });
+			// Draw current points
+		}
+		if (canvasDraw.props.tool !== 'Pencil') return this;
 		if (shouldStartAtEdge) {
 			const offset = 80;
 			console.log('XY3 ' + x, y);

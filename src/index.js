@@ -7,7 +7,7 @@ import ResizeObserver from 'resize-observer-polyfill';
 
 import CoordinateSystem, { IDENTITY } from './coordinateSystem';
 import drawImage from './drawImage';
-import { DefaultState } from './interactionStateMachine';
+import { DefaultState, viewPointFromEvent } from './interactionStateMachine';
 import makePassiveEventOption from './makePassiveEventOption';
 
 function midPointBtw(p1, p2) {
@@ -63,8 +63,8 @@ export default class CanvasDraw extends PureComponent {
 		zoomExtents: boundsProp,
 		clampLinesToDocument: PropTypes.bool,
 		trueMouseDown: PropTypes.bool,
-		lastX: PropTypes.number,
-		lastY: PropTypes.number,
+		tool: PropTypes.string,
+		fillShape: PropTypes.bool,
 	};
 
 	static defaultProps = {
@@ -72,7 +72,7 @@ export default class CanvasDraw extends PureComponent {
 		loadTimeOffset: 5,
 		lazyRadius: 0,
 		brushRadius: 10,
-		brushColor: '#444',
+		brushColor: 'red',
 		catenaryColor: '#0a0302',
 		gridColor: 'rgba(150,150,150,0.17)',
 		backgroundColor: '#FFF',
@@ -94,8 +94,8 @@ export default class CanvasDraw extends PureComponent {
 		zoomExtents: { min: 0.33, max: 3 },
 		clampLinesToDocument: false,
 		trueMouseDown: false,
-		lastX: 0,
-		lastY: 0,
+		tool: '',
+		fillShape: false,
 	};
 
 	///// public API /////////////////////////////////////////////////////////////
@@ -107,10 +107,16 @@ export default class CanvasDraw extends PureComponent {
 		this.ctx = {};
 
 		this.catenary = new Catenary();
-
+		this.circles = [];
+		this.rectangles = [];
 		this.points = [];
+		this.allDrawnPoints = [];
 		this.lines = [];
 		this.erasedLines = [];
+		this.shapeStartX;
+		this.shapeStartY;
+		this.lastX;
+		this.lastY;
 
 		this.mouseHasMoved = true;
 		this.valuesChanged = true;
@@ -230,7 +236,7 @@ export default class CanvasDraw extends PureComponent {
 		return imageData;
 	};
 
-	loadSaveData = (saveData, immediate = this.props.immediateLoading) => {
+	loadSaveData = (saveData, immediate = true) => {
 		if (typeof saveData !== 'string') {
 			throw new Error('saveData needs to be of type string!');
 		}
@@ -269,6 +275,7 @@ export default class CanvasDraw extends PureComponent {
 				immediate,
 			});
 		}
+		this.reDrawShapes();
 	};
 
 	///// private API ////////////////////////////////////////////////////////////
@@ -424,10 +431,42 @@ export default class CanvasDraw extends PureComponent {
 	};
 	handleMouseDown = (e) => {
 		console.log('SET MOUSE DOWN');
+		let { x, y } = viewPointFromEvent(this.coordSystem, e);
+
+		if (this.props.tool === 'Rectangle' || this.props.tool === 'Circle') {
+			console.log('ok');
+			console.log('Start x at ' + x);
+			this.shapeStartX = x;
+			this.shapeStartY = y;
+		}
 		// this.isMouseDown = true;
 		this.handleDrawStart(e);
 	};
 	handleMouseUp = (e) => {
+		if (this.props.tool === 'Rectangle') {
+			this.rectangles.push({
+				shape: {
+					x: this.shapeStartX,
+					y: this.shapeStartY,
+					width: this.lastX - this.shapeStartX,
+					height: this.lastY - this.shapeStartY,
+				},
+				brushColor: this.props.brushColor,
+				brushRadius: this.props.brushRadius,
+			});
+		}
+		if (this.props.tool === 'Circle') {
+			const radius = Math.abs(this.lastX - this.shapeStartX);
+			this.circles.push({
+				shape: {
+					x: this.shapeStartX + radius / 2,
+					y: this.shapeStartY + radius / 2,
+					radius,
+				},
+				brushColor: this.props.brushColor,
+				brushRadius: this.props.brushRadius,
+			});
+		}
 		console.log('SET MOUSE UP');
 		// this.isMouseDown = false;
 		this.handleDrawEnd(e);
@@ -463,9 +502,10 @@ export default class CanvasDraw extends PureComponent {
 
 	applyView = () => {
 		if (!this.ctx.drawing) {
+			console.log('??');
 			return;
 		}
-
+		console.log('APPLYING VIEW');
 		canvasTypes
 			.map((name) => this.ctx[name])
 			.forEach((ctx) => {
@@ -605,6 +645,88 @@ export default class CanvasDraw extends PureComponent {
 		// the bezier control point
 		this.ctx.temp.lineTo(p1.x, p1.y);
 		this.ctx.temp.stroke();
+		console.log('END POINTS ' + this.points);
+	};
+
+	drawRect = () => {
+		const saveData = this.getSaveData();
+		this.loadSaveData(saveData);
+		this.ctx.drawing.beginPath();
+		this.ctx.drawing.strokeColor = this.props.brushColor;
+		this.ctx.drawing.lineWidth = this.props.brushRadius;
+		if (this.props.fillShape) {
+			this.ctx.drawing.fillStyle = this.props.brushColor;
+			this.ctx.drawing.fillRect(
+				this.shapeStartX,
+				this.shapeStartY,
+				this.lastX - this.shapeStartX,
+				this.lastY - this.shapeStartY
+			);
+		} else {
+			this.ctx.drawing.rect(
+				this.shapeStartX,
+				this.shapeStartY,
+				this.lastX - this.shapeStartX,
+				this.lastY - this.shapeStartY
+			);
+		}
+		this.ctx.drawing.stroke();
+		this.ctx.drawing.closePath();
+	};
+
+	drawCircle = () => {
+		const saveData = this.getSaveData();
+		this.loadSaveData(saveData);
+
+		this.ctx.drawing.beginPath();
+
+		this.ctx.drawing.strokeStyle = this.props.brushColor;
+		if (this.props.fillShape)
+			this.ctx.drawing.fillStyle = this.props.brushColor;
+		this.ctx.drawing.lineWidth = this.props.brushRadius;
+		const radius = Math.abs(this.lastX - this.shapeStartX);
+		this.ctx.drawing.arc(
+			this.shapeStartX + radius / 2,
+			this.shapeStartY + radius / 2,
+			radius,
+			0,
+			2 * Math.PI
+		);
+		if (this.props.fillShape) this.ctx.drawing.fill();
+		this.ctx.drawing.stroke();
+		this.ctx.drawing.closePath();
+	};
+
+	reDrawShapes = () => {
+		for (const circle of this.circles) {
+			const { shape, brushColor, brushRadius } = circle;
+			const { x, y, radius } = shape;
+			this.ctx.drawing.beginPath();
+			this.ctx.drawing.strokeStyle = brushColor;
+			this.ctx.drawing.lineWidth = brushRadius;
+			if (this.props.fillShape) this.ctx.drawing.fillStyle = brushColor;
+
+			this.ctx.drawing.arc(x, y, radius, 0, 2 * Math.PI);
+			this.ctx.drawing.stroke();
+			if (this.props.fillShape) this.ctx.drawing.fill();
+			this.ctx.drawing.closePath();
+		}
+		for (const rectangle of this.rectangles) {
+			const { shape, brushColor, brushRadius } = rectangle;
+			const { x, y, width, height } = shape;
+			this.ctx.drawing.beginPath();
+			this.ctx.drawing.strokeStyle = brushColor;
+			this.ctx.drawing.lineWidth = brushRadius;
+			if (this.props.fillShape) {
+				this.ctx.drawing.fillStyle = brushColor;
+				this.ctx.drawing.fillRect(x, y, width, height);
+			} else {
+				this.ctx.drawing.rect(x, y, width, height);
+			} //TODO coopy
+
+			this.ctx.drawing.stroke();
+			this.ctx.drawing.closePath();
+		}
 	};
 
 	saveLine = ({ brushColor, brushRadius } = {}) => {
