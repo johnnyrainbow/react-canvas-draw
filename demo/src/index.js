@@ -64,7 +64,7 @@ class Demo extends Component {
 			>
 				<button
 					onClick={() => {
-						this.setState({ tool: 'Circle' });
+						this.setState({ tool: 'FloodFill' });
 					}}
 				>Circle</button>
 				<h1>React Canvas Draw</h1>
@@ -87,6 +87,8 @@ class Demo extends Component {
 					onChange={() => console.log('onChange')}
           tool={this.state.tool}
           fillShape={true}
+        	hideGrid={true}
+
 				/>
 				<h2>Custom Brush-Color</h2>
 				<p>

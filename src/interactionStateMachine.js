@@ -1,3 +1,5 @@
+import FloodFill from './FloodFill';
+
 const TOUCH_SLOP = 10;
 const PINCH_TIMEOUT_MS = 250;
 const SUPPRESS_SCROLL = (e) => {
@@ -379,22 +381,65 @@ export class DrawingState {
 	handleDrawMove = (e, canvasDraw, shouldStartAtEdge) => {
 		console.log('DRAW MOVE B');
 		e.preventDefault();
-
+		const realCanvasWidth = canvasDraw.canvas.drawing.clientWidth;
+		const realCanvasHeight = canvasDraw.canvas.drawing.clientHeight;
 		let { x, y } = viewPointFromEvent(canvasDraw.coordSystem, e);
 		canvasDraw.lastX = x;
 		canvasDraw.lastY = y;
 		console.log('TOOL ', canvasDraw.props.tool);
+		if (canvasDraw.props.tool === 'FloodFill') {
+			// const imageData = canvasDraw.canvas.drawing
+			// 	.getContext('2d')
+			// 	.getImageData(0, 0, realCanvasWidth, realCanvasHeight);
+			// console.log('IMAGE DATA ', imageData);
+			// const col = { r: 0xff, g: 0xff, b: 0x0, a: 0xff };
+			// canvasDraw.floodFill(
+			// 	canvasDraw.ctx.drawing,
+			// 	canvasDraw.canvas.drawing,
+			// 	0xff0000ff,
+			// 	x,
+			// 	y
+			// );
 
+			// get 2d context
+			const context = canvasDraw.ctx.drawing;
+			// get image data
+			const imgData = context.getImageData(
+				0,
+				0,
+				realCanvasWidth,
+				realCanvasHeight
+			);
+			function hexColorToHexString(hexColor) {
+				const prefix = hexColor.split('#');
+				return `0x${prefix[1].charAt(0)}${prefix[1].charAt(0)}${prefix[1]}`;
+			}
+			console.log(canvasDraw.props.brushColor);
+			console.log(hexColorToHexString(canvasDraw.props.brushColor));
+			canvasDraw.floodFill(
+				context,
+				Math.round(x),
+				Math.round(y),
+				canvasDraw.props.brushColor
+			);
+
+			// // Construct flood fill instance
+			// const floodFill = new FloodFill(imgData);
+			// // Modify image data
+			// floodFill.fill(canvasDraw.props.brushColor, Math.ceil(x), Math.ceil(y), 0);
+			// // put the modified data back in context
+			// context.putImageData(floodFill.imageData, 0, 0);
+		}
 		if (canvasDraw.props.tool === 'Rectangle') {
 			canvasDraw.drawRect();
 		}
 		if (canvasDraw.props.tool === 'Circle') {
 			canvasDraw.drawCircle();
-      // canvasDraw.drawPoints({
-      //   points: canvasDraw.allDrawnPoints,
-      //   brushColor: canvasDraw.props.brushColor,
-      //   brushRadius: canvasDraw.props.brushRadius,
-      // });
+			// canvasDraw.drawPoints({
+			//   points: canvasDraw.allDrawnPoints,
+			//   brushColor: canvasDraw.props.brushColor,
+			//   brushRadius: canvasDraw.props.brushRadius,
+			// });
 			// Draw current points
 		}
 		if (canvasDraw.props.tool !== 'Pencil') return this;
@@ -404,8 +449,7 @@ export class DrawingState {
 			console.log('XY4 ', canvasDraw.lastX, canvasDraw.lastY);
 			console.log('WIDTH' + canvasDraw.props.canvasWidth);
 			console.log('WIDTH2', canvasDraw.canvas.drawing.clientWidth);
-			const realCanvasWidth = canvasDraw.canvas.drawing.clientWidth;
-			const realCanvasHeight = canvasDraw.canvas.drawing.clientHeight;
+
 			if (canvasDraw.lastX < 0 && x < offset) {
 				//left side exit
 				x = 0;

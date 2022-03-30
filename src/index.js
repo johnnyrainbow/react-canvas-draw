@@ -1,10 +1,8 @@
-import React, { PureComponent } from 'react';
-import PropTypes from 'prop-types';
-import { LazyBrush } from 'lazy-brush';
 import { Catenary } from 'catenary-curve';
-
+import { LazyBrush } from 'lazy-brush';
+import PropTypes from 'prop-types';
+import React, { PureComponent } from 'react';
 import ResizeObserver from 'resize-observer-polyfill';
-
 import CoordinateSystem, { IDENTITY } from './coordinateSystem';
 import drawImage from './drawImage';
 import { DefaultState, viewPointFromEvent } from './interactionStateMachine';
@@ -72,7 +70,7 @@ export default class CanvasDraw extends PureComponent {
 		loadTimeOffset: 5,
 		lazyRadius: 0,
 		brushRadius: 10,
-		brushColor: 'red',
+		brushColor: '#db2727',
 		catenaryColor: '#0a0302',
 		gridColor: 'rgba(150,150,150,0.17)',
 		backgroundColor: '#FFF',
@@ -693,7 +691,6 @@ export default class CanvasDraw extends PureComponent {
 			2 * Math.PI
 		);
 		if (this.props.fillShape) this.ctx.drawing.fill();
-		this.ctx.drawing.stroke();
 		this.ctx.drawing.closePath();
 	};
 
@@ -722,7 +719,7 @@ export default class CanvasDraw extends PureComponent {
 				this.ctx.drawing.fillRect(x, y, width, height);
 			} else {
 				this.ctx.drawing.rect(x, y, width, height);
-			} //TODO coopy
+			}
 
 			this.ctx.drawing.stroke();
 			this.ctx.drawing.closePath();
@@ -909,4 +906,129 @@ export default class CanvasDraw extends PureComponent {
 		ctx.arc(brush.x, brush.y, 2, 0, Math.PI * 2, true);
 		ctx.fill();
 	};
+
+	cssTo32BitColor = (function () {
+		let ctx;
+		return function (cssColor) {
+			if (!ctx) {
+				ctx = document.createElement('canvas').getContext('2d');
+				ctx.canvas.width = 1;
+				ctx.canvas.height = 1;
+			}
+			ctx.clearRect(0, 0, 1, 1);
+			ctx.fillStyle = cssColor;
+			ctx.fillRect(0, 0, 1, 1);
+			const imgData = ctx.getImageData(0, 0, 1, 1);
+			return new Uint32Array(imgData.data.buffer)[0];
+		};
+	})();
+	getIsLittleEndian = (function () {
+		var isLittleEndian = true;
+		return function () {
+			var buf = new ArrayBuffer(4);
+			var buf8 = new Uint8ClampedArray(buf);
+			var data = new Uint32Array(buf);
+			data[0] = 0x0f000000;
+			if (buf8[0] === 0x0f) {
+				isLittleEndian = false;
+			}
+			return isLittleEndian;
+		};
+	})();
+	reverseUint32(uint32) {
+		var s32 = new Uint32Array(4);
+		var s8 = new Uint8Array(s32.buffer);
+		var t32 = new Uint32Array(4);
+		var t8 = new Uint8Array(t32.buffer);
+		const reverseUint32e = function (x) {
+			s32[0] = x;
+			t8[0] = s8[3];
+			t8[1] = s8[2];
+			t8[2] = s8[1];
+			t8[3] = s8[0];
+			return t32[0];
+		};
+		return reverseUint32e(uint32);
+	}
+	hexToRgb(hex) {
+		var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+		return result
+			? {
+					r: parseInt(result[1], 16),
+					g: parseInt(result[2], 16),
+					b: parseInt(result[3], 16),
+			  }
+			: null;
+	}
+	isGrey = function (rgb) {
+		if (!rgb) return false;
+
+		const { r, g, b } = rgb;
+		if (r >= 204 && g >= 204 && b >= 204 && r === g && g === b) {
+			console.log('GREY FILLED');
+			return true;
+		}
+		return false;
+	};
+	floodFill(ctx, x, y, fillColor) {
+		fillColor = this.cssTo32BitColor(fillColor);
+		function getPixel(pixelData, x, y) {
+			if (x < 0 || y < 0 || x >= pixelData.width || y >= pixelData.height) {
+				return -1; // impossible color
+			} else {
+				return pixelData.data[y * pixelData.width + x];
+			}
+		}
+		// read the pixels in the canvas
+		const imageData = ctx.getImageData(
+			0,
+			0,
+			ctx.canvas.width,
+			ctx.canvas.height
+		);
+
+		// make a Uint32Array view on the pixels so we can manipulate pixels
+		// one 32bit value at a time instead of as 4 bytes per pixel
+		const pixelData = {
+			width: imageData.width,
+			height: imageData.height,
+			data: new Uint32Array(imageData.data.buffer),
+		};
+
+		// get the color we're filling
+		// console.log(this.getIsLittleEndian());
+		const targetColor = getPixel(pixelData, x, y);
+
+		// check we are actually filling a different color
+		if (targetColor !== fillColor) {
+			const pixelsToCheck = [x, y];
+			while (pixelsToCheck.length > 0) {
+				const y = pixelsToCheck.pop();
+				const x = pixelsToCheck.pop();
+
+				const currentColor = getPixel(pixelData, x, y);
+
+				let rgb = null;
+				// if (this.getIsLittleEndian()) {
+				//   // console.log(targetColor.toString(16));
+				//   // console.log(this.reverseUint32(targetColor).toString(16));
+				//   const conv = this.reverseUint32(currentColor).toString(16);
+				//   const hex = conv.slice(0, conv.length - 2);
+
+				//   rgb = this.hexToRgb(`#${hex}`);
+				// }
+
+				if (currentColor === targetColor) {
+					pixelData.data[y * pixelData.width + x] = fillColor;
+
+					pixelsToCheck.push(x + 1, y);
+					pixelsToCheck.push(x - 1, y);
+					pixelsToCheck.push(x, y + 1);
+					pixelsToCheck.push(x, y - 1);
+				}
+			}
+			// put the data back
+			ctx.putImageData(imageData, 0, 0);
+		}
+	}
 }
