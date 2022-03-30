@@ -64,9 +64,33 @@ class Demo extends Component {
 			>
 				<button
 					onClick={() => {
-						this.setState({ tool: 'FloodFill' });
+						this.setState({ tool: 'Circle', color: '#ffc600' });
 					}}
-				>Circle</button>
+				>
+					Circle
+				</button>
+				<button
+					onClick={() => {
+						this.setState({ tool: 'Pencil', color: '#000000' });
+					}}
+				>
+					Pencil
+				</button>
+        <button
+					onClick={() => {
+						this.setState({ tool: 'FloodFill', color: '#e6e6e6' });
+					}}
+				>
+					Fill
+				</button>
+
+				<button
+					onClick={() => {
+						this.setState({ tool: 'Pencil', color: '#e6e6e6' });
+					}}
+				>
+					Color Change
+				</button>
 				<h1>React Canvas Draw</h1>
 				<iframe
 					title="GitHub link"
@@ -85,10 +109,10 @@ class Demo extends Component {
 				<CanvasDraw
 					trueMouseDown={this.state.trueMouseDown}
 					onChange={() => console.log('onChange')}
-          tool={this.state.tool}
-          fillShape={true}
-        	hideGrid={true}
-
+					tool={this.state.tool}
+					fillShape={false}
+					hideGrid={true}
+					brushColor={this.state.color}
 				/>
 				<h2>Custom Brush-Color</h2>
 				<p>
@@ -236,7 +260,6 @@ class Demo extends Component {
 					lazyRadius={this.state.lazyRadius}
 					canvasWidth={this.state.width}
 					canvasHeight={this.state.height}
-		
 				/>
 				<p>
 					The following is a disabled canvas with a hidden grid that we use to

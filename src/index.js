@@ -273,7 +273,9 @@ export default class CanvasDraw extends PureComponent {
 				immediate,
 			});
 		}
+		// if (this.imageData) this.ctx.drawing.putImageData(this.imageData, 0, 0);
 		this.reDrawShapes();
+	
 	};
 
 	///// private API ////////////////////////////////////////////////////////////
@@ -691,6 +693,7 @@ export default class CanvasDraw extends PureComponent {
 			2 * Math.PI
 		);
 		if (this.props.fillShape) this.ctx.drawing.fill();
+		this.ctx.drawing.stroke();
 		this.ctx.drawing.closePath();
 	};
 
@@ -1000,6 +1003,7 @@ export default class CanvasDraw extends PureComponent {
 		const targetColor = getPixel(pixelData, x, y);
 
 		// check we are actually filling a different color
+		console.log("TARGET VS FILL " + targetColor, fillColor)
 		if (targetColor !== fillColor) {
 			const pixelsToCheck = [x, y];
 			while (pixelsToCheck.length > 0) {
@@ -1028,6 +1032,7 @@ export default class CanvasDraw extends PureComponent {
 				}
 			}
 			// put the data back
+			this.imageData = imageData;
 			ctx.putImageData(imageData, 0, 0);
 		}
 	}

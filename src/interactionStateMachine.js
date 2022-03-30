@@ -414,8 +414,7 @@ export class DrawingState {
 				const prefix = hexColor.split('#');
 				return `0x${prefix[1].charAt(0)}${prefix[1].charAt(0)}${prefix[1]}`;
 			}
-			console.log(canvasDraw.props.brushColor);
-			console.log(hexColorToHexString(canvasDraw.props.brushColor));
+
 			canvasDraw.floodFill(
 				context,
 				Math.round(x),
