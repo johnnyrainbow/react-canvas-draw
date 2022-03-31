@@ -7,10 +7,7 @@ import CoordinateSystem, { IDENTITY } from './coordinateSystem';
 import drawImage from './drawImage';
 import { DefaultState, viewPointFromEvent } from './interactionStateMachine';
 import makePassiveEventOption from './makePassiveEventOption';
-import pencilIcon from './assets/pencil.png';
-import eraserIcon from './assets/eraser.png';
-import bucketIcon from './assets/fillbucket.png';
-import crossHair from './assets/crosshair.png';
+
 function midPointBtw(p1, p2) {
 	return {
 		x: p1.x + (p2.x - p1.x) / 2,
@@ -66,6 +63,10 @@ export default class CanvasDraw extends PureComponent {
 		trueMouseDown: PropTypes.bool,
 		tool: PropTypes.string,
 		fillShape: PropTypes.bool,
+		pencilIcon: PropTypes.any,
+		eraserIcon: PropTypes.any,
+		bucketIcon: PropTypes.any,
+		crosshairIcon: PropTypes.any,
 	};
 
 	static defaultProps = {
@@ -97,6 +98,10 @@ export default class CanvasDraw extends PureComponent {
 		trueMouseDown: false,
 		tool: '',
 		fillShape: false,
+		pencilIcon: null,
+		eraserIcon: null,
+		bucketIcon: null,
+		crosshairIcon: null,
 	};
 
 	///// public API /////////////////////////////////////////////////////////////
@@ -698,11 +703,10 @@ export default class CanvasDraw extends PureComponent {
 	};
 
 	drawPoints = ({ points, brushColor, brushRadius }) => {
-
 		this.ctx.temp.lineJoin = 'round';
 		this.ctx.temp.lineCap = 'round';
 
-		if(this.props.type === "eraser") {
+		if (this.props.type === 'eraser') {
 			this.ctx.temp.lineJoin = 'miter';
 			this.ctx.temp.lineCap = 'butt';
 		}
@@ -730,7 +734,6 @@ export default class CanvasDraw extends PureComponent {
 		// the bezier control point
 		this.ctx.temp.lineTo(p1.x, p1.y);
 		this.ctx.temp.stroke();
-	
 	};
 
 	drawRect = () => {
@@ -964,14 +967,19 @@ export default class CanvasDraw extends PureComponent {
 		ctx.beginPath();
 		ctx.fillStyle = this.props.brushColor;
 
-		let base_image = new Image();
-		if (this.props.tool === 'Pencil') base_image.src = pencilIcon;
-		if (this.props.tool === 'Eraser') base_image.src = eraserIcon;
-		if (this.props.tool === 'FloodFill') base_image.src = bucketIcon;
-		if (this.props.tool === 'Circle') base_image.src = crossHair;
-		if (this.props.tool === 'Rectangle') base_image.src = crossHair;
+		// let base_image = new Image();
+
+		// base_image.src = this.props.crosshairIcon;
 		// base_image.onload = function(){
-		ctx.drawImage(base_image, pointer.x, pointer.y - 50, 50, 50);
+		const crosshairDim = 15;
+		ctx.lineWidth = 2;
+		ctx.moveTo(pointer.x - crosshairDim, pointer.y );
+		ctx.lineTo(pointer.x + crosshairDim, pointer.y);
+
+		ctx.moveTo(pointer.x , pointer.y - crosshairDim);
+		ctx.lineTo(pointer.x, pointer.y + crosshairDim);
+		ctx.stroke();
+		// ctx.drawImage(base_image, pointer.x, pointer.y - 50, 50, 50);
 	};
 
 	cssTo32BitColor = (function () {
@@ -1037,6 +1045,9 @@ export default class CanvasDraw extends PureComponent {
 		}
 		return false;
 	};
+
+	floodFillImage() {}
+
 	floodFill(ctx, x, y, fillColor) {
 		fillColor = this.cssTo32BitColor(fillColor);
 		function getPixel(pixelData, x, y) {
@@ -1054,7 +1065,6 @@ export default class CanvasDraw extends PureComponent {
 			this.ctx.drawing.canvas.height
 		);
 
-	
 		// this.white2transparent(this.ctx.drawing, imageData);
 
 		// make a Uint32Array view on the pixels so we can manipulate pixels
