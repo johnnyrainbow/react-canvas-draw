@@ -441,13 +441,14 @@ export class DrawingState {
 			// });
 			// Draw current points
 		}
-		if (canvasDraw.props.tool !== 'Pencil') return this;
+		if (
+			canvasDraw.props.tool !== 'Pencil' &&
+			canvasDraw.props.tool !== 'Eraser'
+		)
+			return this;
+
 		if (shouldStartAtEdge) {
 			const offset = 80;
-			console.log('XY3 ' + x, y);
-			console.log('XY4 ', canvasDraw.lastX, canvasDraw.lastY);
-			console.log('WIDTH' + canvasDraw.props.canvasWidth);
-			console.log('WIDTH2', canvasDraw.canvas.drawing.clientWidth);
 
 			if (canvasDraw.lastX < 0 && x < offset) {
 				//left side exit
@@ -503,7 +504,10 @@ export class DrawingState {
 		// Draw current points
 		canvasDraw.drawPoints({
 			points: canvasDraw.points,
-			brushColor: canvasDraw.props.brushColor,
+			brushColor:
+				canvasDraw.props.tool === 'Eraser'
+					? '#FFFFFF'
+					: canvasDraw.props.brushColor,
 			brushRadius: canvasDraw.props.brushRadius,
 		});
 

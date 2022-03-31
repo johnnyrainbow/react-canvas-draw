@@ -186,9 +186,15 @@ export default class CanvasDraw extends PureComponent {
 	getDataURL = (fileType, useBgImage, backgroundColour) => {
 		// Get a reference to the "drawing" layer of the canvas
 		let canvasToExport = this.canvas.drawing;
-
+		const imageData1 = this.ctx.drawing.getImageData(
+			0,
+			0,
+			this.ctx.drawing.canvas.width,
+			this.ctx.drawing.canvas.height
+		);
+		this.white2transparent(this.ctx.drawing, imageData1);
 		let context = canvasToExport.getContext('2d');
-
+	
 		//cache height and width
 		let width = canvasToExport.width;
 		let height = canvasToExport.height;
@@ -233,8 +239,62 @@ export default class CanvasDraw extends PureComponent {
 
 		return imageData;
 	};
+	scaleImageData(c, imageData, scale) {
+		console.log('SCALE IS ' + scale);
+		var scaled = c.createImageData(
+			imageData.width * scale,
+			imageData.height * scale
+		);
 
+		for (var row = 0; row < imageData.height; row++) {
+			for (var col = 0; col < imageData.width; col++) {
+				var sourcePixel = [
+					imageData.data[(row * imageData.width + col) * 4 + 0],
+					imageData.data[(row * imageData.width + col) * 4 + 1],
+					imageData.data[(row * imageData.width + col) * 4 + 2],
+					imageData.data[(row * imageData.width + col) * 4 + 3],
+				];
+				for (var y = 0; y < scale; y++) {
+					var destRow = row * scale + y;
+					for (var x = 0; x < scale; x++) {
+						var destCol = col * scale + x;
+						for (var i = 0; i < 4; i++) {
+							scaled.data[(destRow * scaled.width + destCol) * 4 + i] =
+								sourcePixel[i];
+						}
+					}
+				}
+			}
+		}
+
+		return scaled;
+	}
+
+	white2transparent(context, imgData) {
+		let pix = imgData.data;
+
+		// Loops through all of the pixels and modifies the components.
+		for (var i = 0, n = pix.length; i < n; i += 4) {
+			if (pix[i] == 255 && pix[i + 1] == 255 && pix[i + 2] == 255) {
+				//pixel is white
+				pix[i + 3] = 0;
+				// console.log("FOUND WHITE PIXELS")
+			} else {
+				//pixel is not white, modify it.
+				// console.log("NOP  WHITE PIXELS")
+			}
+			//pix[i+3] is the transparency.
+		}
+
+		context.putImageData(imgData, 0, 0);
+	}
 	loadSaveData = (saveData, immediate = true) => {
+		this.clear();
+		if (!this.imageData) return;
+
+		this.ctx.drawing.putImageData(this.imageData, 0, 0);
+		return;
+
 		if (typeof saveData !== 'string') {
 			throw new Error('saveData needs to be of type string!');
 		}
@@ -244,9 +304,14 @@ export default class CanvasDraw extends PureComponent {
 		if (!lines || typeof lines.push !== 'function') {
 			throw new Error('saveData.lines needs to be an array!');
 		}
-
+		const imageData = this.ctx.drawing.getImageData(
+			0,
+			0,
+			this.ctx.drawing.canvas.width,
+			this.ctx.drawing.canvas.height
+		);
 		this.clear();
-
+		if (this.imageData) this.ctx.drawing.putImageData(imageData, 0, 0);
 		if (
 			width === this.props.canvasWidth &&
 			height === this.props.canvasHeight
@@ -273,9 +338,8 @@ export default class CanvasDraw extends PureComponent {
 				immediate,
 			});
 		}
-		// if (this.imageData) this.ctx.drawing.putImageData(this.imageData, 0, 0);
-		this.reDrawShapes();
-	
+
+		//	this.reDrawShapes();
 	};
 
 	///// private API ////////////////////////////////////////////////////////////
@@ -358,6 +422,7 @@ export default class CanvasDraw extends PureComponent {
 		if (prevProps.imgSrc !== this.props.imgSrc) {
 			this.drawImage();
 		}
+		// console.log("IMG URL " + this.getDataURL('png', false, null));
 	}
 
 	componentWillUnmount = () => {
@@ -443,6 +508,8 @@ export default class CanvasDraw extends PureComponent {
 		this.handleDrawStart(e);
 	};
 	handleMouseUp = (e) => {
+		console.log('GOT IMAGE DATA');
+
 		if (this.props.tool === 'Rectangle') {
 			this.rectangles.push({
 				shape: {
@@ -453,6 +520,7 @@ export default class CanvasDraw extends PureComponent {
 				},
 				brushColor: this.props.brushColor,
 				brushRadius: this.props.brushRadius,
+				fillShape: this.props.fillShape,
 			});
 		}
 		if (this.props.tool === 'Circle') {
@@ -465,11 +533,19 @@ export default class CanvasDraw extends PureComponent {
 				},
 				brushColor: this.props.brushColor,
 				brushRadius: this.props.brushRadius,
+				fillShape: this.props.fillShape,
 			});
 		}
 		console.log('SET MOUSE UP');
 		// this.isMouseDown = false;
 		this.handleDrawEnd(e);
+		const imageData = this.ctx.drawing.getImageData(
+			0,
+			0,
+			this.ctx.drawing.canvas.width,
+			this.ctx.drawing.canvas.height
+		);
+		this.imageData = imageData;
 	};
 
 	///// Event Handlers
@@ -699,25 +775,25 @@ export default class CanvasDraw extends PureComponent {
 
 	reDrawShapes = () => {
 		for (const circle of this.circles) {
-			const { shape, brushColor, brushRadius } = circle;
+			const { shape, brushColor, brushRadius, fillShape } = circle;
 			const { x, y, radius } = shape;
 			this.ctx.drawing.beginPath();
 			this.ctx.drawing.strokeStyle = brushColor;
 			this.ctx.drawing.lineWidth = brushRadius;
-			if (this.props.fillShape) this.ctx.drawing.fillStyle = brushColor;
+			if (fillShape) this.ctx.drawing.fillStyle = brushColor;
 
 			this.ctx.drawing.arc(x, y, radius, 0, 2 * Math.PI);
 			this.ctx.drawing.stroke();
-			if (this.props.fillShape) this.ctx.drawing.fill();
+			if (fillShape) this.ctx.drawing.fill();
 			this.ctx.drawing.closePath();
 		}
 		for (const rectangle of this.rectangles) {
-			const { shape, brushColor, brushRadius } = rectangle;
+			const { shape, brushColor, brushRadius, fillShape } = rectangle;
 			const { x, y, width, height } = shape;
 			this.ctx.drawing.beginPath();
 			this.ctx.drawing.strokeStyle = brushColor;
 			this.ctx.drawing.lineWidth = brushRadius;
-			if (this.props.fillShape) {
+			if (fillShape) {
 				this.ctx.drawing.fillStyle = brushColor;
 				this.ctx.drawing.fillRect(x, y, width, height);
 			} else {
@@ -1003,7 +1079,7 @@ export default class CanvasDraw extends PureComponent {
 		const targetColor = getPixel(pixelData, x, y);
 
 		// check we are actually filling a different color
-		console.log("TARGET VS FILL " + targetColor, fillColor)
+		console.log('TARGET VS FILL ' + targetColor, fillColor);
 		if (targetColor !== fillColor) {
 			const pixelsToCheck = [x, y];
 			while (pixelsToCheck.length > 0) {

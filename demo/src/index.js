@@ -62,6 +62,8 @@ class Demo extends Component {
 					console.log('TRUE MOUSE UP');
 				}}
 			>
+			
+		
 				<button
 					onClick={() => {
 						this.setState({ tool: 'Circle', color: '#ffc600' });
@@ -76,14 +78,20 @@ class Demo extends Component {
 				>
 					Pencil
 				</button>
-        <button
+					<button
+					onClick={() => {
+						this.setState({ tool: 'Eraser' });
+					}}
+				>
+					Eraser
+				</button>
+				<button
 					onClick={() => {
 						this.setState({ tool: 'FloodFill', color: '#e6e6e6' });
 					}}
 				>
 					Fill
 				</button>
-
 				<button
 					onClick={() => {
 						this.setState({ tool: 'Pencil', color: '#e6e6e6' });
@@ -144,7 +152,6 @@ class Demo extends Component {
 					brushColor="rgba(155,12,60,0.3)"
 					imgSrc="https://upload.wikimedia.org/wikipedia/commons/a/a1/Nepalese_Mhapuja_Mandala.jpg"
 				/>
-
 				<h2>Refreshable Background Image</h2>
 				<p>This will refresh the background in every two seconds.</p>
 				<CanvasDraw
