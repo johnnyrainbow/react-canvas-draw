@@ -42,3 +42,6 @@ input[type=number] {
 div {
   width: 50vw !important;
 }
+canvas {
+  cursor: none;
+}

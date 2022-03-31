@@ -7,7 +7,9 @@ import CoordinateSystem, { IDENTITY } from './coordinateSystem';
 import drawImage from './drawImage';
 import { DefaultState, viewPointFromEvent } from './interactionStateMachine';
 import makePassiveEventOption from './makePassiveEventOption';
-
+import pencilIcon from './assets/pencil.png';
+import eraserIcon from './assets/eraser.png';
+import bucketIcon from './assets/bucket.png';
 function midPointBtw(p1, p2) {
 	return {
 		x: p1.x + (p2.x - p1.x) / 2,
@@ -194,7 +196,7 @@ export default class CanvasDraw extends PureComponent {
 		);
 		this.white2transparent(this.ctx.drawing, imageData1);
 		let context = canvasToExport.getContext('2d');
-	
+
 		//cache height and width
 		let width = canvasToExport.width;
 		let height = canvasToExport.height;
@@ -695,8 +697,14 @@ export default class CanvasDraw extends PureComponent {
 	};
 
 	drawPoints = ({ points, brushColor, brushRadius }) => {
+
 		this.ctx.temp.lineJoin = 'round';
 		this.ctx.temp.lineCap = 'round';
+
+		if(this.props.type === "eraser") {
+			this.ctx.temp.lineJoin = 'miter';
+			this.ctx.temp.lineCap = 'butt';
+		}
 		this.ctx.temp.strokeStyle = brushColor;
 
 		this.clearWindow(this.ctx.temp);
@@ -721,7 +729,7 @@ export default class CanvasDraw extends PureComponent {
 		// the bezier control point
 		this.ctx.temp.lineTo(p1.x, p1.y);
 		this.ctx.temp.stroke();
-		console.log('END POINTS ' + this.points);
+	
 	};
 
 	drawRect = () => {
@@ -954,36 +962,13 @@ export default class CanvasDraw extends PureComponent {
 		// Draw brush preview
 		ctx.beginPath();
 		ctx.fillStyle = this.props.brushColor;
-		ctx.arc(brush.x, brush.y, this.props.brushRadius, 0, Math.PI * 2, true);
-		ctx.fill();
 
-		// Draw mouse point (the one directly at the cursor)
-		ctx.beginPath();
-		ctx.fillStyle = this.props.catenaryColor;
-		ctx.arc(pointer.x, pointer.y, 4, 0, Math.PI * 2, true);
-		ctx.fill();
-
-		// Draw catenary
-		if (this.lazy.isEnabled()) {
-			ctx.beginPath();
-			ctx.lineWidth = 2;
-			ctx.lineCap = 'round';
-			ctx.setLineDash([2, 4]);
-			ctx.strokeStyle = this.props.catenaryColor;
-			this.catenary.drawToCanvas(
-				this.ctx.interface,
-				brush,
-				pointer,
-				this.chainLength
-			);
-			ctx.stroke();
-		}
-
-		// Draw brush point (the one in the middle of the brush preview)
-		ctx.beginPath();
-		ctx.fillStyle = this.props.catenaryColor;
-		ctx.arc(brush.x, brush.y, 2, 0, Math.PI * 2, true);
-		ctx.fill();
+		let base_image = new Image();
+		if (this.props.tool === 'Pencil') base_image.src = pencilIcon;
+		if (this.props.tool === 'Eraser') base_image.src = eraserIcon;
+		if (this.props.tool === 'FloodFill') base_image.src = bucketIcon;
+		// base_image.onload = function(){
+		ctx.drawImage(base_image, pointer.x, pointer.y - 50, 50, 50);
 	};
 
 	cssTo32BitColor = (function () {
@@ -1062,9 +1047,12 @@ export default class CanvasDraw extends PureComponent {
 		const imageData = ctx.getImageData(
 			0,
 			0,
-			ctx.canvas.width,
-			ctx.canvas.height
+			this.ctx.drawing.canvas.width,
+			this.ctx.drawing.canvas.height
 		);
+
+	
+		// this.white2transparent(this.ctx.drawing, imageData);
 
 		// make a Uint32Array view on the pixels so we can manipulate pixels
 		// one 32bit value at a time instead of as 4 bytes per pixel
