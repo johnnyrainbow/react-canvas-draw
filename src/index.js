@@ -9,7 +9,8 @@ import { DefaultState, viewPointFromEvent } from './interactionStateMachine';
 import makePassiveEventOption from './makePassiveEventOption';
 import pencilIcon from './assets/pencil.png';
 import eraserIcon from './assets/eraser.png';
-import bucketIcon from './assets/bucket.png';
+import bucketIcon from './assets/fillbucket.png';
+import crossHair from './assets/crosshair.png';
 function midPointBtw(p1, p2) {
 	return {
 		x: p1.x + (p2.x - p1.x) / 2,
@@ -967,6 +968,8 @@ export default class CanvasDraw extends PureComponent {
 		if (this.props.tool === 'Pencil') base_image.src = pencilIcon;
 		if (this.props.tool === 'Eraser') base_image.src = eraserIcon;
 		if (this.props.tool === 'FloodFill') base_image.src = bucketIcon;
+		if (this.props.tool === 'Circle') base_image.src = crossHair;
+		if (this.props.tool === 'Rectangle') base_image.src = crossHair;
 		// base_image.onload = function(){
 		ctx.drawImage(base_image, pointer.x, pointer.y - 50, 50, 50);
 	};
