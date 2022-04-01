@@ -123,7 +123,8 @@ export default class CanvasDraw extends PureComponent {
 		this.shapeStartY;
 		this.lastX;
 		this.lastY;
-
+		this.mouseX;
+		this.mouseY;
 		this.mouseHasMoved = true;
 		this.valuesChanged = true;
 		this.isDrawing = false;
@@ -301,6 +302,8 @@ export default class CanvasDraw extends PureComponent {
 		if (!this.imageData) return;
 
 		this.ctx.drawing.putImageData(this.imageData, 0, 0);
+		const pointer = this.lazy.getPointerCoordinates();
+		// this.drawInterface(this.ctx.interface, { x: this.lastX, y: this.lastY, gab: true });
 		return;
 
 		if (typeof saveData !== 'string') {
@@ -507,6 +510,7 @@ export default class CanvasDraw extends PureComponent {
 		let { x, y } = viewPointFromEvent(this.coordSystem, e);
 
 		if (this.props.tool === 'Rectangle' || this.props.tool === 'Circle') {
+			this.isDrawingShape = true;
 			console.log('ok');
 			console.log('Start x at ' + x);
 			this.shapeStartX = x;
@@ -517,7 +521,10 @@ export default class CanvasDraw extends PureComponent {
 	};
 	handleMouseUp = (e) => {
 		console.log('GOT IMAGE DATA');
-
+		if (this.isDrawingShape) {
+			this.lazy.update({ x: this.lastX, y: this.lastY });
+		}
+		this.isDrawingShape = false;
 		if (this.props.tool === 'Rectangle') {
 			this.rectangles.push({
 				shape: {
@@ -574,7 +581,6 @@ export default class CanvasDraw extends PureComponent {
 	};
 
 	handleDrawMove = (e) => {
-		console.log('MOVE');
 		this.interactionSM = this.interactionSM.handleDrawMove(e, this);
 		this.mouseHasMoved = true;
 	};
@@ -958,7 +964,7 @@ export default class CanvasDraw extends PureComponent {
 		}
 	};
 
-	drawInterface = (ctx, pointer, brush) => {
+	drawInterface = (ctx, pointer) => {
 		if (this.props.hideInterface) return;
 
 		this.clearWindow(ctx);
@@ -973,13 +979,18 @@ export default class CanvasDraw extends PureComponent {
 		// base_image.onload = function(){
 		const crosshairDim = 15;
 		ctx.lineWidth = 2;
-		ctx.moveTo(pointer.x - crosshairDim, pointer.y );
+		if (this.isDrawingShape) pointer.x = this.lastX;
+		if (this.isDrawingShape) pointer.y = this.lastY;
+
+		ctx.moveTo(pointer.x - crosshairDim, pointer.y);
 		ctx.lineTo(pointer.x + crosshairDim, pointer.y);
 
-		ctx.moveTo(pointer.x , pointer.y - crosshairDim);
+		ctx.moveTo(pointer.x, pointer.y - crosshairDim);
 		ctx.lineTo(pointer.x, pointer.y + crosshairDim);
 		ctx.stroke();
 		// ctx.drawImage(base_image, pointer.x, pointer.y - 50, 50, 50);
+		// if(pointer.gab)
+		console.log('Drawing cursor at ', pointer.x, pointer.y);
 	};
 
 	cssTo32BitColor = (function () {
