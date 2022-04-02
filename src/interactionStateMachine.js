@@ -387,48 +387,7 @@ export class DrawingState {
 		canvasDraw.lastX = x;
 		canvasDraw.lastY = y;
 		console.log('TOOL ', canvasDraw.props.tool);
-		if (canvasDraw.props.tool === 'FloodFill') {
-			// const imageData = canvasDraw.canvas.drawing
-			// 	.getContext('2d')
-			// 	.getImageData(0, 0, realCanvasWidth, realCanvasHeight);
-			// console.log('IMAGE DATA ', imageData);
-			// const col = { r: 0xff, g: 0xff, b: 0x0, a: 0xff };
-			// canvasDraw.floodFill(
-			// 	canvasDraw.ctx.drawing,
-			// 	canvasDraw.canvas.drawing,
-			// 	0xff0000ff,
-			// 	x,
-			// 	y
-			// );
-
-			// get 2d context
-			const context = canvasDraw.ctx.drawing;
-			// get image data
-			const imgData = context.getImageData(
-				0,
-				0,
-				realCanvasWidth,
-				realCanvasHeight
-			);
-			function hexColorToHexString(hexColor) {
-				const prefix = hexColor.split('#');
-				return `0x${prefix[1].charAt(0)}${prefix[1].charAt(0)}${prefix[1]}`;
-			}
-
-			canvasDraw.floodFill(
-				context,
-				Math.round(x),
-				Math.round(y),
-				canvasDraw.props.brushColor
-			);
-
-			// // Construct flood fill instance
-			// const floodFill = new FloodFill(imgData);
-			// // Modify image data
-			// floodFill.fill(canvasDraw.props.brushColor, Math.ceil(x), Math.ceil(y), 0);
-			// // put the modified data back in context
-			// context.putImageData(floodFill.imageData, 0, 0);
-		}
+	
 		if (canvasDraw.props.tool === 'Rectangle') {
 			canvasDraw.drawRect();
 		}

@@ -508,6 +508,17 @@ export default class CanvasDraw extends PureComponent {
 	handleMouseDown = (e) => {
 		console.log('SET MOUSE DOWN');
 		let { x, y } = viewPointFromEvent(this.coordSystem, e);
+		if (this.props.tool === 'FloodFill') {
+			// get 2d context
+			const context = this.ctx.drawing;
+			// get image data
+			this.floodFill(
+				context,
+				Math.round(x),
+				Math.round(y),
+				this.props.brushColor
+			);
+		}
 
 		if (this.props.tool === 'Rectangle' || this.props.tool === 'Circle') {
 			this.isDrawingShape = true;
@@ -524,6 +535,8 @@ export default class CanvasDraw extends PureComponent {
 		if (this.isDrawingShape) {
 			this.lazy.update({ x: this.lastX, y: this.lastY });
 		}
+
+	
 		this.isDrawingShape = false;
 		if (this.props.tool === 'Rectangle') {
 			this.rectangles.push({
@@ -746,7 +759,7 @@ export default class CanvasDraw extends PureComponent {
 		const saveData = this.getSaveData();
 		this.loadSaveData(saveData);
 		this.ctx.drawing.beginPath();
-		this.ctx.drawing.strokeColor = this.props.brushColor;
+		this.ctx.drawing.strokeStyle = this.props.brushColor;
 		this.ctx.drawing.lineWidth = this.props.brushRadius;
 		if (this.props.fillShape) {
 			this.ctx.drawing.fillStyle = this.props.brushColor;
