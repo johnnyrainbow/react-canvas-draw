@@ -147,7 +147,8 @@ export default class CanvasDraw extends PureComponent {
 			this.ctx.drawing.canvas.width,
 			this.ctx.drawing.canvas.height
 		);
-		if (this.undoImageQueue.length >= 6) { //max 6 stacks undo
+		if (this.undoImageQueue.length >= 6) {
+			//max 6 stacks undo
 			this.undoImageQueue.pop();
 		}
 		this.undoImageQueue.push(imageData);
@@ -814,13 +815,17 @@ export default class CanvasDraw extends PureComponent {
 		if (this.props.fillShape)
 			this.ctx.drawing.fillStyle = this.props.brushColor;
 		this.ctx.drawing.lineWidth = this.props.brushRadius;
-		const radius = Math.abs(this.lastX - this.shapeStartX);
-		this.ctx.drawing.arc(
-			this.shapeStartX + radius / 2,
-			this.shapeStartY + radius / 2,
-			radius,
+		const radiusX = Math.abs(this.lastX - this.shapeStartX);
+		const radiusY = Math.abs(this.lastY - this.shapeStartY);
+		this.ctx.drawing.ellipse(
+			this.shapeStartX + radiusX / 2,
+			this.shapeStartY + radiusY / 2,
+			radiusX,
+			radiusY,
 			0,
-			2 * Math.PI
+			0,
+			Math.PI * 2,
+			
 		);
 		if (this.props.fillShape) this.ctx.drawing.fill();
 		this.ctx.drawing.stroke();
