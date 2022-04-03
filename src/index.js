@@ -154,15 +154,11 @@ export default class CanvasDraw extends PureComponent {
 		this.undoImageQueue.push(imageData);
 	};
 	undo = () => {
-		console.log('hit undo');
 		if (this.undoImageQueue.length > 0) {
-			console.log('popping!');
 			const image = this.undoImageQueue.pop();
-			console.log('image ' + image);
+
 			this.imageData = image;
 			this.loadSaveData();
-		} else {
-			console.log('NO UNDO DATA :(');
 		}
 		// let lines = [];
 		// if (this.lines.length) {
@@ -181,6 +177,11 @@ export default class CanvasDraw extends PureComponent {
 		this.triggerOnChange();
 	};
 
+	clearCanvasExposed = () => {
+		this.pushToUndoQueue();
+		this.imageData = null;
+		this.clear();
+	};
 	clear = () => {
 		this.erasedLines = [];
 		this.clearExceptErasedLines();
@@ -824,8 +825,7 @@ export default class CanvasDraw extends PureComponent {
 			radiusY,
 			0,
 			0,
-			Math.PI * 2,
-			
+			Math.PI * 2
 		);
 		if (this.props.fillShape) this.ctx.drawing.fill();
 		this.ctx.drawing.stroke();
