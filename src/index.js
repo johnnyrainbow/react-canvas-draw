@@ -130,6 +130,7 @@ export default class CanvasDraw extends PureComponent {
 		this.isDrawing = false;
 		this.isPressing = false;
 		this.deferRedrawOnViewChange = false;
+		this.undoImageQueue = [];
 
 		this.interactionSM = new DefaultState();
 		this.coordSystem = new CoordinateSystem({
@@ -139,16 +140,38 @@ export default class CanvasDraw extends PureComponent {
 		this.coordSystem.attachViewChangeListener(this.applyView.bind(this));
 	}
 
-	undo = () => {
-		let lines = [];
-		if (this.lines.length) {
-			lines = this.lines.slice(0, -1);
-		} else if (this.erasedLines.length) {
-			lines = this.erasedLines.pop();
+	pushToUndoQueue = () => {
+		const imageData = this.ctx.drawing.getImageData(
+			0,
+			0,
+			this.ctx.drawing.canvas.width,
+			this.ctx.drawing.canvas.height
+		);
+		if (this.undoImageQueue.length >= 6) { //max 6 stacks undo
+			this.undoImageQueue.pop();
 		}
-		this.clearExceptErasedLines();
-		this.simulateDrawingLines({ lines, immediate: true });
-		this.triggerOnChange();
+		this.undoImageQueue.push(imageData);
+	};
+	undo = () => {
+		console.log('hit undo');
+		if (this.undoImageQueue.length > 0) {
+			console.log('popping!');
+			const image = this.undoImageQueue.pop();
+			console.log('image ' + image);
+			this.imageData = image;
+			this.loadSaveData();
+		} else {
+			console.log('NO UNDO DATA :(');
+		}
+		// let lines = [];
+		// if (this.lines.length) {
+		// 	lines = this.lines.slice(0, -1);
+		// } else if (this.erasedLines.length) {
+		// 	lines = this.erasedLines.pop();
+		// }
+		// this.clearExceptErasedLines();
+		// this.simulateDrawingLines({ lines, immediate: true });
+		// this.triggerOnChange();
 	};
 
 	eraseAll = () => {
@@ -536,7 +559,6 @@ export default class CanvasDraw extends PureComponent {
 			this.lazy.update({ x: this.lastX, y: this.lastY });
 		}
 
-	
 		this.isDrawingShape = false;
 		if (this.props.tool === 'Rectangle') {
 			this.rectangles.push({
@@ -567,6 +589,7 @@ export default class CanvasDraw extends PureComponent {
 		console.log('SET MOUSE UP');
 		// this.isMouseDown = false;
 		this.handleDrawEnd(e);
+		this.pushToUndoQueue();
 		const imageData = this.ctx.drawing.getImageData(
 			0,
 			0,
@@ -1134,6 +1157,7 @@ export default class CanvasDraw extends PureComponent {
 			}
 			// put the data back
 			this.imageData = imageData;
+			this.pushToUndoQueue();
 			ctx.putImageData(imageData, 0, 0);
 		}
 	}
