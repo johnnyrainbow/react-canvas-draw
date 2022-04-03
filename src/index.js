@@ -149,7 +149,7 @@ export default class CanvasDraw extends PureComponent {
 		);
 		if (this.undoImageQueue.length >= 6) {
 			//max 6 stacks undo
-			this.undoImageQueue.pop();
+			this.undoImageQueue.shift();
 		}
 		this.undoImageQueue.push(imageData);
 	};
