@@ -1012,14 +1012,14 @@ export default class CanvasDraw extends PureComponent {
 
 		// Draw brush preview
 		ctx.beginPath();
-		ctx.fillStyle = this.props.brushColor;
+		ctx.strokeStyle = '#e8e8e8';
 
 		// let base_image = new Image();
 
 		// base_image.src = this.props.crosshairIcon;
 		// base_image.onload = function(){
 		const crosshairDim = 15;
-		ctx.lineWidth = 2;
+		ctx.lineWidth = 4;
 		if (this.isDrawingShape) pointer.x = this.lastX;
 		if (this.isDrawingShape) pointer.y = this.lastY;
 
@@ -1029,9 +1029,19 @@ export default class CanvasDraw extends PureComponent {
 		ctx.moveTo(pointer.x, pointer.y - crosshairDim);
 		ctx.lineTo(pointer.x, pointer.y + crosshairDim);
 		ctx.stroke();
+		ctx.closePath();
+
+		ctx.lineWidth = 2;
+		ctx.strokeStyle = '#000000';
+		ctx.moveTo(pointer.x - crosshairDim / 2, pointer.y);
+		ctx.lineTo(pointer.x + crosshairDim / 2, pointer.y);
+
+		ctx.moveTo(pointer.x, pointer.y - crosshairDim / 2);
+		ctx.lineTo(pointer.x, pointer.y + crosshairDim / 2);
+		ctx.stroke();
+		ctx.closePath();
 		// ctx.drawImage(base_image, pointer.x, pointer.y - 50, 50, 50);
 		// if(pointer.gab)
-		console.log('Drawing cursor at ', pointer.x, pointer.y);
 	};
 
 	cssTo32BitColor = (function () {

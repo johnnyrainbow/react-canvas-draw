@@ -87,7 +87,7 @@ class Demo extends Component {
 				</button>
 				<button
 					onClick={() => {
-						this.setState({ tool: 'FloodFill', color: '#e6e6e6' });
+						this.setState({ tool: 'FloodFill', color: '#000000' });
 					}}
 				>
 					Fill
