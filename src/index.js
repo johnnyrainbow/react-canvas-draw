@@ -67,6 +67,7 @@ export default class CanvasDraw extends PureComponent {
 		eraserIcon: PropTypes.any,
 		bucketIcon: PropTypes.any,
 		crosshairIcon: PropTypes.any,
+		scale: PropTypes.number
 	};
 
 	static defaultProps = {
@@ -516,11 +517,13 @@ export default class CanvasDraw extends PureComponent {
 		);
 	}
 	handleMouseOut = (e) => {
+		if (this.props.disabled) return;
 		//we want to end the draw regardless. but mouse down should still be true. check it when we come back in, and know to restart the drawing
 		this.handleDrawEnd(e);
 	};
 
 	handleMouseOver = (e) => {
+		if (this.props.disabled) return;
 		console.log('TRUE MOUSE STATE ' + this.props.trueMouseDown);
 		if (this.props.trueMouseDown) {
 			let clientX = e.clientX;
@@ -531,8 +534,11 @@ export default class CanvasDraw extends PureComponent {
 		}
 	};
 	handleMouseDown = (e) => {
+		if (this.props.disabled) return;
 		console.log('SET MOUSE DOWN');
 		let { x, y } = viewPointFromEvent(this.coordSystem, e);
+		x = x*this.props.scale;
+		y=y*this.props.scale;
 		if (this.props.tool === 'FloodFill') {
 			// get 2d context
 			const context = this.ctx.drawing;
@@ -556,6 +562,7 @@ export default class CanvasDraw extends PureComponent {
 		this.handleDrawStart(e);
 	};
 	handleMouseUp = (e) => {
+		if (this.props.disabled) return;
 		console.log('GOT IMAGE DATA');
 		if (this.isDrawingShape) {
 			this.lazy.update({ x: this.lastX, y: this.lastY });
@@ -619,11 +626,13 @@ export default class CanvasDraw extends PureComponent {
 	};
 
 	handleDrawMove = (e) => {
+		if (this.props.disabled) return;
 		this.interactionSM = this.interactionSM.handleDrawMove(e, this);
 		this.mouseHasMoved = true;
 	};
 
 	handleDrawEnd = (e) => {
+		if (this.props.disabled) return;
 		this.interactionSM = this.interactionSM.handleDrawEnd(e, this);
 		this.mouseHasMoved = true;
 	};
@@ -1008,6 +1017,10 @@ export default class CanvasDraw extends PureComponent {
 	drawInterface = (ctx, pointer) => {
 		if (this.props.hideInterface) return;
 
+		if (this.props.disabled) {
+			pointer.x = -100;
+			pointer.y = -100;
+		}
 		this.clearWindow(ctx);
 
 		// Draw brush preview

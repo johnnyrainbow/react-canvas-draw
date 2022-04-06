@@ -45,8 +45,9 @@ export class DefaultState {
 		if (canvasDraw.props.disabled) {
 			return new DisabledState();
 		} else {
-			const { x, y } = viewPointFromEvent(canvasDraw.coordSystem, e);
-
+			let { x, y } = viewPointFromEvent(canvasDraw.coordSystem, e);
+			x = x*canvasDraw.props.scale;
+			y = y*canvasDraw.props.scale;
 			canvasDraw.lazy.update({ x, y });
 			return this;
 		}
@@ -384,6 +385,8 @@ export class DrawingState {
 		const realCanvasWidth = canvasDraw.canvas.drawing.clientWidth;
 		const realCanvasHeight = canvasDraw.canvas.drawing.clientHeight;
 		let { x, y } = viewPointFromEvent(canvasDraw.coordSystem, e);
+		x = canvasDraw.props.scale * x;
+		y = canvasDraw.props.scale * y;
 		canvasDraw.lastX = x;
 		canvasDraw.lastY = y;
 		console.log('TOOL ', canvasDraw.props.tool);
