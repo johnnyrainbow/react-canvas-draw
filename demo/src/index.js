@@ -121,6 +121,8 @@ class Demo extends Component {
 					fillShape={false}
 					hideGrid={true}
 					brushColor={this.state.color}
+					scale={1}
+				
 				/>
 				<h2>Custom Brush-Color</h2>
 				<p>

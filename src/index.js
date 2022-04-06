@@ -67,7 +67,7 @@ export default class CanvasDraw extends PureComponent {
 		eraserIcon: PropTypes.any,
 		bucketIcon: PropTypes.any,
 		crosshairIcon: PropTypes.any,
-		scale: PropTypes.number
+		scale: PropTypes.number,
 	};
 
 	static defaultProps = {
@@ -537,8 +537,8 @@ export default class CanvasDraw extends PureComponent {
 		if (this.props.disabled) return;
 		console.log('SET MOUSE DOWN');
 		let { x, y } = viewPointFromEvent(this.coordSystem, e);
-		x = x*this.props.scale;
-		y=y*this.props.scale;
+		x = x * this.props.scale;
+		y = y * this.props.scale;
 		if (this.props.tool === 'FloodFill') {
 			// get 2d context
 			const context = this.ctx.drawing;
@@ -1058,15 +1058,17 @@ export default class CanvasDraw extends PureComponent {
 	};
 
 	cssTo32BitColor = (function () {
+		const setOpacity = (hex, alpha) => `${hex}${Math.floor(alpha * 255).toString(16).padStart(2, 0)}`;
 		let ctx;
-		return function (cssColor) {
+		return function (cssColor, transparency) {
 			if (!ctx) {
 				ctx = document.createElement('canvas').getContext('2d');
 				ctx.canvas.width = 1;
 				ctx.canvas.height = 1;
 			}
 			ctx.clearRect(0, 0, 1, 1);
-			ctx.fillStyle = cssColor;
+			ctx.fillStyle = transparency ? setOpacity(cssColor.toString().substring(1), 0.4) : cssColor;
+			console.log(cssColor + " VS " + setOpacity(cssColor.toString().substring(1), 0.9))
 			ctx.fillRect(0, 0, 1, 1);
 			const imgData = ctx.getImageData(0, 0, 1, 1);
 			return new Uint32Array(imgData.data.buffer)[0];
@@ -1107,6 +1109,7 @@ export default class CanvasDraw extends PureComponent {
 					r: parseInt(result[1], 16),
 					g: parseInt(result[2], 16),
 					b: parseInt(result[3], 16),
+					a: parseInt(result[4], 16),
 			  }
 			: null;
 	}
@@ -1125,6 +1128,7 @@ export default class CanvasDraw extends PureComponent {
 
 	floodFill(ctx, x, y, fillColor) {
 		fillColor = this.cssTo32BitColor(fillColor);
+		// const fillColorEdge = this.cssTo32BitColor(fillColor, true);
 		function getPixel(pixelData, x, y) {
 			if (x < 0 || y < 0 || x >= pixelData.width || y >= pixelData.height) {
 				return -1; // impossible color
@@ -1155,7 +1159,7 @@ export default class CanvasDraw extends PureComponent {
 		const targetColor = getPixel(pixelData, x, y);
 
 		// check we are actually filling a different color
-		console.log('TARGET VS FILL ' + targetColor, fillColor);
+		// console.log('TARGET VS FILL ' + targetColor, fillColor);
 		if (targetColor !== fillColor) {
 			const pixelsToCheck = [x, y];
 			while (pixelsToCheck.length > 0) {
@@ -1165,14 +1169,21 @@ export default class CanvasDraw extends PureComponent {
 				const currentColor = getPixel(pixelData, x, y);
 
 				let rgb = null;
-				// if (this.getIsLittleEndian()) {
-				//   // console.log(targetColor.toString(16));
-				//   // console.log(this.reverseUint32(targetColor).toString(16));
-				//   const conv = this.reverseUint32(currentColor).toString(16);
-				//   const hex = conv.slice(0, conv.length - 2);
 
-				//   rgb = this.hexToRgb(`#${hex}`);
-				// }
+				// const conv = this.getIsLittleEndian()
+				// 	? this.reverseUint32(currentColor).toString(16)
+				// 	: currentColor.toString(16);
+
+				// const hex = conv.slice(0, conv.length - 2);
+				// // console.log(hex)
+				// rgb = this.hexToRgb(`#${hex}`);
+				// console.log(rgb)
+				// console.log(rgb + "VS " + );
+				// console.log()
+				// console.log(currentColor + "VS TARGET" + targetColor)
+				//if the current pixel we're iterating on is equal to the color of the first pixel we clicked to fill at
+				//OR if the current pixel is within a range of the first click pixel
+				//the issue is that the stroke has several ranges of lighter colors around it
 
 				if (currentColor === targetColor) {
 					pixelData.data[y * pixelData.width + x] = fillColor;
@@ -1181,6 +1192,10 @@ export default class CanvasDraw extends PureComponent {
 					pixelsToCheck.push(x - 1, y);
 					pixelsToCheck.push(x, y + 1);
 					pixelsToCheck.push(x, y - 1);
+				} else {
+					//hit an edge, fill it yeah? ideally with more transparent though. less jagged edges
+
+					pixelData.data[y * pixelData.width + x] = fillColor;
 				}
 			}
 			// put the data back
