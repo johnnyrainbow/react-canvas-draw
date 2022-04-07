@@ -539,6 +539,7 @@ export default class CanvasDraw extends PureComponent {
 		let { x, y } = viewPointFromEvent(this.coordSystem, e);
 		x = x * this.props.scale;
 		y = y * this.props.scale;
+
 		if (this.props.tool === 'FloodFill') {
 			// get 2d context
 			const context = this.ctx.drawing;
@@ -552,6 +553,7 @@ export default class CanvasDraw extends PureComponent {
 		}
 
 		if (this.props.tool === 'Rectangle' || this.props.tool === 'Circle') {
+			this.pushToUndoQueue();
 			this.isDrawingShape = true;
 			console.log('ok');
 			console.log('Start x at ' + x);
@@ -563,6 +565,7 @@ export default class CanvasDraw extends PureComponent {
 	};
 	handleMouseUp = (e) => {
 		if (this.props.disabled) return;
+
 		console.log('GOT IMAGE DATA');
 		if (this.isDrawingShape) {
 			this.lazy.update({ x: this.lastX, y: this.lastY });
@@ -595,10 +598,14 @@ export default class CanvasDraw extends PureComponent {
 				fillShape: this.props.fillShape,
 			});
 		}
-		console.log('SET MOUSE UP');
+
 		// this.isMouseDown = false;
+		if (this.props.tool === 'Pencil' ||this.props.tool === 'Eraser' ) {
+			console.log('pushing undo');
+			this.pushToUndoQueue();
+		}
 		this.handleDrawEnd(e);
-		this.pushToUndoQueue();
+
 		const imageData = this.ctx.drawing.getImageData(
 			0,
 			0,
@@ -1058,7 +1065,10 @@ export default class CanvasDraw extends PureComponent {
 	};
 
 	cssTo32BitColor = (function () {
-		const setOpacity = (hex, alpha) => `${hex}${Math.floor(alpha * 255).toString(16).padStart(2, 0)}`;
+		const setOpacity = (hex, alpha) =>
+			`${hex}${Math.floor(alpha * 255)
+				.toString(16)
+				.padStart(2, 0)}`;
 		let ctx;
 		return function (cssColor, transparency) {
 			if (!ctx) {
@@ -1067,8 +1077,12 @@ export default class CanvasDraw extends PureComponent {
 				ctx.canvas.height = 1;
 			}
 			ctx.clearRect(0, 0, 1, 1);
-			ctx.fillStyle = transparency ? setOpacity(cssColor.toString().substring(1), 0.4) : cssColor;
-			console.log(cssColor + " VS " + setOpacity(cssColor.toString().substring(1), 0.9))
+			ctx.fillStyle = transparency
+				? setOpacity(cssColor.toString().substring(1), 0.4)
+				: cssColor;
+			console.log(
+				cssColor + ' VS ' + setOpacity(cssColor.toString().substring(1), 0.9)
+			);
 			ctx.fillRect(0, 0, 1, 1);
 			const imgData = ctx.getImageData(0, 0, 1, 1);
 			return new Uint32Array(imgData.data.buffer)[0];
@@ -1199,8 +1213,9 @@ export default class CanvasDraw extends PureComponent {
 				}
 			}
 			// put the data back
-			this.imageData = imageData;
 			this.pushToUndoQueue();
+			this.imageData = imageData;
+
 			ctx.putImageData(imageData, 0, 0);
 		}
 	}

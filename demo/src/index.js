@@ -94,10 +94,10 @@ class Demo extends Component {
 				</button>
 				<button
 					onClick={() => {
-						this.setState({ tool: 'Pencil', color: '#e6e6e6' });
+						this.saveableCanvas.undo()
 					}}
 				>
-					Color Change
+					undo
 				</button>
 				<h1>React Canvas Draw</h1>
 				<iframe
@@ -115,6 +115,7 @@ class Demo extends Component {
 				</p>
 				<p>Try it out! Draw on this white canvas:</p>
 				<CanvasDraw
+					ref={(canvasDraw) => (this.saveableCanvas = canvasDraw)}
 					trueMouseDown={this.state.trueMouseDown}
 					onChange={() => console.log('onChange')}
 					tool={this.state.tool}
@@ -122,6 +123,7 @@ class Demo extends Component {
 					hideGrid={true}
 					brushColor={this.state.color}
 					scale={1}
+				
 				
 				/>
 				<h2>Custom Brush-Color</h2>
@@ -263,7 +265,7 @@ class Demo extends Component {
 					</div>
 				</div>
 				<CanvasDraw
-					ref={(canvasDraw) => (this.saveableCanvas = canvasDraw)}
+					
 					brushColor={this.state.color}
 					brushRadius={this.state.brushRadius}
 					lazyRadius={this.state.lazyRadius}
