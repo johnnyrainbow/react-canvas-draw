@@ -473,6 +473,7 @@ export class DrawingState {
 			brushRadius: canvasDraw.props.brushRadius,
 		});
 
+
 		return this;
 	};
 

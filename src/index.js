@@ -79,7 +79,7 @@ export default class CanvasDraw extends PureComponent {
 		brushColor: '#db2727',
 		catenaryColor: '#0a0302',
 		gridColor: 'rgba(150,150,150,0.17)',
-		backgroundColor: '#FFF',
+
 		hideGrid: false,
 		canvasWidth: 400,
 		canvasHeight: 400,
@@ -104,6 +104,8 @@ export default class CanvasDraw extends PureComponent {
 		eraserIcon: null,
 		bucketIcon: null,
 		crosshairIcon: null,
+		silhouetteImage: null,
+		backgroundColor: '#ffffff',
 	};
 
 	///// public API /////////////////////////////////////////////////////////////
@@ -326,11 +328,26 @@ export default class CanvasDraw extends PureComponent {
 	}
 	loadSaveData = (saveData, immediate = true) => {
 		this.clear();
+		
 		if (!this.imageData) return;
 
 		this.ctx.drawing.putImageData(this.imageData, 0, 0);
+		this.drawSilhouetteImage();
+		// this.ctx.drawing.beginPath();
+		// this.ctx.drawing.strokeStyle = '#000000';
+		// this.ctx.drawing.fillStyle = '#000000';
+		// this.ctx.drawing.fillRect(
+		// 	0,
+		// 	0,
+		// 	this.ctx.drawing.canvas.width,
+		// 	this.ctx.drawing.canvas.height
+		// );
 
-		const pointer = this.lazy.getPointerCoordinates();
+		// this.ctx.drawing.stroke();
+		// this.ctx.drawing.closePath();
+		// this.ctx.drawing.putImageData(this.imageData, 0, 0);
+
+		// const pointer = this.lazy.getPointerCoordinates();
 		// this.drawInterface(this.ctx.interface, { x: this.lastX, y: this.lastY, gab: true });
 		return;
 
@@ -402,8 +419,9 @@ export default class CanvasDraw extends PureComponent {
 		this.canvasObserver.observe(this.canvasContainer);
 
 		this.drawImage();
-		this.loop();
 
+		this.loop();
+		this.drawSilhouetteImage();
 		window.setTimeout(() => {
 			const initX = window.innerWidth / 2;
 			const initY = window.innerHeight / 2;
@@ -423,6 +441,7 @@ export default class CanvasDraw extends PureComponent {
 			if (this.props.saveData) {
 				this.loadSaveData(this.props.saveData);
 			}
+			this.drawSilhouetteImage();
 		}, 100);
 
 		// Attach our wheel event listener here instead of in the render so that we can specify a non-passive listener.
@@ -437,6 +456,7 @@ export default class CanvasDraw extends PureComponent {
 	}
 
 	componentDidUpdate(prevProps) {
+		this.drawSilhouetteImage();
 		console.log('PROP UPDATE MOUSEDOWN ' + this.props.trueMouseDown);
 		if (prevProps.lazyRadius !== this.props.lazyRadius) {
 			// Set new lazyRadius values
@@ -461,6 +481,7 @@ export default class CanvasDraw extends PureComponent {
 		if (prevProps.imgSrc !== this.props.imgSrc) {
 			this.drawImage();
 		}
+
 		// console.log("IMG URL " + this.getDataURL('png', false, null));
 	}
 
@@ -606,11 +627,23 @@ export default class CanvasDraw extends PureComponent {
 			console.log('pushing undo');
 			this.pushToUndoQueue();
 		}
+		this.drawSilhouetteImage();
 		this.handleDrawEnd(e);
+
+		const imageData = this.ctx.drawing.getImageData(
+			0,
+			0,
+			this.ctx.drawing.canvas.width,
+			this.ctx.drawing.canvas.height
+		);
+		this.imageData = imageData;
+	};
+	drawSilhouetteImage = () => {
 		if (this.props.silhouetteImage) {
 			let base_image = new Image();
 
 			base_image.src = this.props.silhouetteImage;
+
 			this.ctx.drawing.drawImage(
 				base_image,
 				0,
@@ -619,13 +652,6 @@ export default class CanvasDraw extends PureComponent {
 				this.ctx.drawing.canvas.height
 			);
 		}
-		const imageData = this.ctx.drawing.getImageData(
-			0,
-			0,
-			this.ctx.drawing.canvas.width,
-			this.ctx.drawing.canvas.height
-		);
-		this.imageData = imageData;
 	};
 
 	///// Event Handlers
@@ -836,6 +862,7 @@ export default class CanvasDraw extends PureComponent {
 	};
 
 	drawCircle = () => {
+
 		const saveData = this.getSaveData();
 		this.loadSaveData(saveData);
 
