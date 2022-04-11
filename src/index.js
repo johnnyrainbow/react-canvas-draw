@@ -328,7 +328,7 @@ export default class CanvasDraw extends PureComponent {
 	}
 	loadSaveData = (saveData, immediate = true) => {
 		this.clear();
-		
+
 		if (!this.imageData) return;
 
 		this.ctx.drawing.putImageData(this.imageData, 0, 0);
@@ -541,6 +541,9 @@ export default class CanvasDraw extends PureComponent {
 	}
 	handleMouseOut = (e) => {
 		if (this.props.disabled) return;
+		if (this.props.tool != 'Pencil' && this.props.tool != 'Eraser')
+			this.handleMouseUp(e);
+
 		//we want to end the draw regardless. but mouse down should still be true. check it when we come back in, and know to restart the drawing
 		this.handleDrawEnd(e);
 	};
@@ -548,7 +551,10 @@ export default class CanvasDraw extends PureComponent {
 	handleMouseOver = (e) => {
 		if (this.props.disabled) return;
 		console.log('TRUE MOUSE STATE ' + this.props.trueMouseDown);
-		if (this.props.trueMouseDown) {
+		if (
+			(this.props.trueMouseDown && this.props.tool == 'Pencil') ||
+			this.props.tool == 'Eraser'
+		) {
 			let clientX = e.clientX;
 			let clientY = e.clientY;
 			console.log('XY ' + clientX, clientY);
@@ -588,6 +594,7 @@ export default class CanvasDraw extends PureComponent {
 	};
 	handleMouseUp = (e) => {
 		if (this.props.disabled) return;
+		
 
 		console.log('GOT IMAGE DATA');
 		if (this.isDrawingShape) {
@@ -862,7 +869,6 @@ export default class CanvasDraw extends PureComponent {
 	};
 
 	drawCircle = () => {
-
 		const saveData = this.getSaveData();
 		this.loadSaveData(saveData);
 
