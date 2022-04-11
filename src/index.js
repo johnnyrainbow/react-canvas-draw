@@ -594,7 +594,6 @@ export default class CanvasDraw extends PureComponent {
 	};
 	handleMouseUp = (e) => {
 		if (this.props.disabled) return;
-		
 
 		console.log('GOT IMAGE DATA');
 		if (this.isDrawingShape) {
@@ -648,16 +647,12 @@ export default class CanvasDraw extends PureComponent {
 	drawSilhouetteImage = () => {
 		if (this.props.silhouetteImage) {
 			let base_image = new Image();
-
+			base_image.crossOrigin = "anonymous";
+			const ctx = this.ctx.drawing;
+			base_image.onload = function () {
+				ctx.drawImage(base_image, 0, 0, ctx.canvas.width, ctx.canvas.height);
+			};
 			base_image.src = this.props.silhouetteImage;
-
-			this.ctx.drawing.drawImage(
-				base_image,
-				0,
-				0,
-				this.ctx.drawing.canvas.width,
-				this.ctx.drawing.canvas.height
-			);
 		}
 	};
 
