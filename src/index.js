@@ -68,6 +68,7 @@ export default class CanvasDraw extends PureComponent {
 		bucketIcon: PropTypes.any,
 		crosshairIcon: PropTypes.any,
 		scale: PropTypes.number,
+		silhouetteImage: PropTypes.any,
 	};
 
 	static defaultProps = {
@@ -328,6 +329,7 @@ export default class CanvasDraw extends PureComponent {
 		if (!this.imageData) return;
 
 		this.ctx.drawing.putImageData(this.imageData, 0, 0);
+
 		const pointer = this.lazy.getPointerCoordinates();
 		// this.drawInterface(this.ctx.interface, { x: this.lastX, y: this.lastY, gab: true });
 		return;
@@ -600,12 +602,23 @@ export default class CanvasDraw extends PureComponent {
 		}
 
 		// this.isMouseDown = false;
-		if (this.props.tool === 'Pencil' ||this.props.tool === 'Eraser' ) {
+		if (this.props.tool === 'Pencil' || this.props.tool === 'Eraser') {
 			console.log('pushing undo');
 			this.pushToUndoQueue();
 		}
 		this.handleDrawEnd(e);
+		if (this.props.silhouetteImage) {
+			let base_image = new Image();
 
+			base_image.src = this.props.silhouetteImage;
+			this.ctx.drawing.drawImage(
+				base_image,
+				0,
+				0,
+				this.ctx.drawing.canvas.width,
+				this.ctx.drawing.canvas.height
+			);
+		}
 		const imageData = this.ctx.drawing.getImageData(
 			0,
 			0,

@@ -3,7 +3,7 @@ import { render } from 'react-dom';
 
 import CanvasDraw from '../../src';
 import classNames from './index.css';
-
+import silhouetteImage from "./001.png"
 class Demo extends Component {
 	state = {
 		color: '#ffc600',
@@ -123,6 +123,7 @@ class Demo extends Component {
 					hideGrid={true}
 					brushColor={this.state.color}
 					scale={1}
+					silhouetteImage={silhouetteImage}
 				
 				
 				/>
